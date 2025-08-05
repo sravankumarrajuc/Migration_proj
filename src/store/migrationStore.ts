@@ -1,0 +1,593 @@
+import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
+import { 
+  Project, 
+  SchemaFile, 
+  MigrationPhase, 
+  DiscoveryState, 
+  LineageGraph, 
+  MappingState, 
+  TableMapping, 
+  FieldMapping,
+  CodeGenerationState,
+  CodePlatform,
+  GeneratedCode
+} from '@/types/migration';
+
+interface MigrationState {
+  // Current project context
+  currentProject: Project | null;
+  currentPhase: MigrationPhase;
+  
+  // Schema upload state
+  sourceFiles: SchemaFile[];
+  targetFiles: SchemaFile[];
+  uploadProgress: number;
+  
+  // Discovery state
+  discoveryState: DiscoveryState;
+  
+  // Mapping state
+  mappingState: MappingState;
+  
+  // Code Generation state
+  codeGenerationState: CodeGenerationState;
+  
+  // Actions
+  setCurrentProject: (project: Project) => void;
+  setCurrentPhase: (phase: MigrationPhase) => void;
+  addSourceFile: (file: SchemaFile) => void;
+  addTargetFile: (file: SchemaFile) => void;
+  updateFileStatus: (fileId: string, status: SchemaFile['status'], preview?: SchemaFile['preview']) => void;
+  removeFile: (fileId: string, type: 'source' | 'target') => void;
+  clearFiles: () => void;
+  setUploadProgress: (progress: number) => void;
+  canProceedToNextPhase: () => boolean;
+  
+  // Discovery actions
+  startDiscovery: () => void;
+  updateDiscoveryProgress: (progress: number, step: string) => void;
+  setLineageGraph: (graph: LineageGraph) => void;
+  completeDiscovery: () => void;
+  resetDiscovery: () => void;
+  
+  // Mapping actions
+  startMapping: () => void;
+  updateMappingProgress: (progress: number, step: string) => void;
+  setSelectedTables: (sourceTableId: string, targetTableId: string) => void;
+  setTableMapping: (mapping: TableMapping) => void;
+  addFieldMapping: (mapping: FieldMapping) => void;
+  updateFieldMapping: (mappingId: string, updates: Partial<FieldMapping>) => void;
+  removeFieldMapping: (mappingId: string) => void;
+  generateAISuggestions: () => void;
+  acceptMapping: (mappingId: string) => void;
+  rejectMapping: (mappingId: string) => void;
+  bulkAcceptHighConfidence: () => void;
+  completeMapping: () => void;
+  resetMapping: () => void;
+  
+  // Code Generation actions
+  startCodeGeneration: (step: string) => void;
+  setSelectedPlatform: (platform: CodePlatform) => void;
+  setGeneratedCode: (platform: CodePlatform, code: GeneratedCode) => void;
+  completeCodeGeneration: () => void;
+  
+  // Project completion
+  completeProject: () => void;
+}
+
+export const useMigrationStore = create<MigrationState>()(
+  persist(
+    (set, get) => ({
+      currentProject: null,
+      currentPhase: 'upload',
+      sourceFiles: [],
+      targetFiles: [],
+      uploadProgress: 0,
+      discoveryState: {
+        isProcessing: false,
+        progress: 0,
+        currentStep: '',
+        lineageGraph: null,
+        error: null,
+        completedAt: null,
+      },
+    mappingState: {
+      isProcessing: false,
+      progress: 0,
+      currentStep: '',
+      selectedSourceTable: null,
+      selectedTargetTable: null,
+      currentTableMapping: null,
+      allMappings: [],
+      suggestions: [],
+      error: null,
+      completedAt: null,
+    },
+
+    codeGenerationState: {
+      isProcessing: false,
+      progress: 0,
+      currentStep: '',
+      selectedPlatform: 'bigquery',
+      generatedCodes: {
+        bigquery: null,
+        databricks: null,
+        'python-beam': null,
+        dbt: null,
+      },
+      optimizations: [],
+      previewMode: 'code',
+      error: null,
+      completedAt: null,
+    },
+
+      setCurrentProject: (project) => {
+        set({ currentProject: project, currentPhase: project.progress.currentPhase });
+      },
+
+      setCurrentPhase: (phase) => {
+        const { currentProject, currentPhase } = get();
+        
+        // Only update if the phase is actually different to prevent infinite loops
+        if (currentPhase === phase && currentProject?.progress.currentPhase === phase) {
+          return;
+        }
+        
+        set({ currentPhase: phase });
+        if (currentProject) {
+          set({
+            currentProject: {
+              ...currentProject,
+              progress: {
+                ...currentProject.progress,
+                currentPhase: phase,
+              },
+            },
+          });
+        }
+      },
+
+      addSourceFile: (file) => {
+        set((state) => ({
+          sourceFiles: [...state.sourceFiles, file],
+        }));
+      },
+
+      addTargetFile: (file) => {
+        set((state) => ({
+          targetFiles: [...state.targetFiles, file],
+        }));
+      },
+
+      updateFileStatus: (fileId, status, preview) => {
+        set((state) => ({
+          sourceFiles: state.sourceFiles.map((file) =>
+            file.id === fileId ? { ...file, status, preview } : file
+          ),
+          targetFiles: state.targetFiles.map((file) =>
+            file.id === fileId ? { ...file, status, preview } : file
+          ),
+        }));
+      },
+
+      removeFile: (fileId, type) => {
+        set((state) => ({
+          [type === 'source' ? 'sourceFiles' : 'targetFiles']: state[
+            type === 'source' ? 'sourceFiles' : 'targetFiles'
+          ].filter((file) => file.id !== fileId),
+        }));
+      },
+
+      clearFiles: () => {
+        set({ sourceFiles: [], targetFiles: [], uploadProgress: 0 });
+      },
+
+      setUploadProgress: (progress) => {
+        set({ uploadProgress: progress });
+      },
+
+      canProceedToNextPhase: () => {
+        const { sourceFiles, targetFiles, currentPhase, discoveryState, mappingState, codeGenerationState } = get();
+        
+        if (currentPhase === 'upload') {
+          return sourceFiles.length > 0 && 
+                 targetFiles.length > 0 && 
+                 sourceFiles.every(f => f.status === 'completed') && 
+                 targetFiles.every(f => f.status === 'completed');
+        }
+        
+        if (currentPhase === 'discovery') {
+          return discoveryState.completedAt !== null && discoveryState.lineageGraph !== null;
+        }
+        
+        if (currentPhase === 'mapping') {
+          console.log('Checking mapping phase completion:', {
+            suggestionsCount: mappingState.suggestions.length,
+            processedCount: mappingState.suggestions.filter(s => s.status === 'approved' || s.status === 'rejected').length,
+            mappingsCount: mappingState.allMappings.length,
+            completedAt: mappingState.completedAt
+          });
+          
+          // Check if AI suggestions have been processed (approved/rejected) or mappings exist
+          const hasProcessedSuggestions = mappingState.suggestions.length > 0 && 
+            mappingState.suggestions.every(s => s.status === 'approved' || s.status === 'rejected');
+          const hasMappings = mappingState.allMappings.length > 0;
+          const canProceed = (hasProcessedSuggestions || hasMappings) || mappingState.completedAt !== null;
+          
+          console.log('Can proceed to next phase:', canProceed);
+          return canProceed;
+        }
+        
+        if (currentPhase === 'codegen') {
+          return codeGenerationState.completedAt !== null && 
+                 Object.values(codeGenerationState.generatedCodes).some(code => code !== null);
+        }
+        
+        if (currentPhase === 'validation') {
+          const { currentProject } = get();
+          return currentProject?.progress?.validationComplete === true;
+        }
+        
+        return false;
+      },
+
+      // Discovery actions
+      startDiscovery: () => {
+        set((state) => ({
+          discoveryState: {
+            ...state.discoveryState,
+            isProcessing: true,
+            progress: 0,
+            currentStep: 'Analyzing schema files...',
+            error: null,
+          },
+        }));
+      },
+
+      updateDiscoveryProgress: (progress, step) => {
+        set((state) => ({
+          discoveryState: {
+            ...state.discoveryState,
+            progress,
+            currentStep: step,
+          },
+        }));
+      },
+
+      setLineageGraph: (graph) => {
+        set((state) => ({
+          discoveryState: {
+            ...state.discoveryState,
+            lineageGraph: graph,
+          },
+        }));
+      },
+
+      completeDiscovery: () => {
+        set((state) => ({
+          discoveryState: {
+            ...state.discoveryState,
+            isProcessing: false,
+            progress: 100,
+            currentStep: 'Discovery complete',
+            completedAt: new Date().toISOString(),
+          },
+        }));
+      },
+
+      resetDiscovery: () => {
+        set((state) => ({
+          discoveryState: {
+            isProcessing: false,
+            progress: 0,
+            currentStep: '',
+            lineageGraph: null,
+            error: null,
+            completedAt: null,
+          },
+        }));
+      },
+
+      // Mapping actions
+      startMapping: () => {
+        set((state) => ({
+          mappingState: {
+            ...state.mappingState,
+            isProcessing: true,
+            progress: 0,
+            currentStep: 'Initializing mapping analysis...',
+            error: null,
+          },
+        }));
+      },
+
+      updateMappingProgress: (progress, step) => {
+        set((state) => ({
+          mappingState: {
+            ...state.mappingState,
+            progress,
+            currentStep: step,
+          },
+        }));
+      },
+
+      setSelectedTables: (sourceTableId, targetTableId) => {
+        set((state) => {
+          const existingMapping = state.mappingState.allMappings.find(
+            m => m.sourceTableId === sourceTableId && m.targetTableId === targetTableId
+          );
+          
+          return {
+            mappingState: {
+              ...state.mappingState,
+              selectedSourceTable: sourceTableId,
+              selectedTargetTable: targetTableId,
+              currentTableMapping: existingMapping || {
+                sourceTableId,
+                targetTableId,
+                fieldMappings: [],
+                completionPercentage: 0,
+                requiredFieldsCovered: 0,
+                totalRequiredFields: 0,
+              },
+            },
+          };
+        });
+      },
+
+      setTableMapping: (mapping) => {
+        set((state) => ({
+          mappingState: {
+            ...state.mappingState,
+            currentTableMapping: mapping,
+            allMappings: state.mappingState.allMappings.some(
+              m => m.sourceTableId === mapping.sourceTableId && m.targetTableId === mapping.targetTableId
+            )
+              ? state.mappingState.allMappings.map(m =>
+                  m.sourceTableId === mapping.sourceTableId && m.targetTableId === mapping.targetTableId
+                    ? mapping
+                    : m
+                )
+              : [...state.mappingState.allMappings, mapping],
+          },
+        }));
+      },
+
+      addFieldMapping: (mapping) => {
+        set((state) => {
+          if (!state.mappingState.currentTableMapping) return state;
+          
+          const updatedMapping = {
+            ...state.mappingState.currentTableMapping,
+            fieldMappings: [...state.mappingState.currentTableMapping.fieldMappings, mapping],
+          };
+          
+          return {
+            mappingState: {
+              ...state.mappingState,
+              currentTableMapping: updatedMapping,
+              allMappings: state.mappingState.allMappings.map(m =>
+                m.sourceTableId === updatedMapping.sourceTableId && m.targetTableId === updatedMapping.targetTableId
+                  ? updatedMapping
+                  : m
+              ),
+            },
+          };
+        });
+      },
+
+      updateFieldMapping: (mappingId, updates) => {
+        set((state) => {
+          console.log('Updating field mapping:', mappingId, updates);
+          
+          const updatedSuggestions = state.mappingState.suggestions.map(s =>
+            s.id === mappingId ? { ...s, ...updates } : s
+          );
+          
+          console.log('Updated suggestions status:', updatedSuggestions.map(s => ({ id: s.id, status: s.status })));
+          
+          if (!state.mappingState.currentTableMapping) {
+            return {
+              mappingState: {
+                ...state.mappingState,
+                suggestions: updatedSuggestions,
+              },
+            };
+          }
+          
+          const updatedMapping = {
+            ...state.mappingState.currentTableMapping,
+            fieldMappings: state.mappingState.currentTableMapping.fieldMappings.map(fm =>
+              fm.id === mappingId ? { ...fm, ...updates } : fm
+            ),
+          };
+          
+          return {
+            mappingState: {
+              ...state.mappingState,
+              currentTableMapping: updatedMapping,
+              suggestions: updatedSuggestions,
+              allMappings: state.mappingState.allMappings.map(m =>
+                m.sourceTableId === updatedMapping.sourceTableId && m.targetTableId === updatedMapping.targetTableId
+                  ? updatedMapping
+                  : m
+              ),
+            },
+          };
+        });
+      },
+
+      removeFieldMapping: (mappingId) => {
+        set((state) => {
+          if (!state.mappingState.currentTableMapping) return state;
+          
+          const updatedMapping = {
+            ...state.mappingState.currentTableMapping,
+            fieldMappings: state.mappingState.currentTableMapping.fieldMappings.filter(fm => fm.id !== mappingId),
+          };
+          
+          return {
+            mappingState: {
+              ...state.mappingState,
+              currentTableMapping: updatedMapping,
+              allMappings: state.mappingState.allMappings.map(m =>
+                m.sourceTableId === updatedMapping.sourceTableId && m.targetTableId === updatedMapping.targetTableId
+                  ? updatedMapping
+                  : m
+              ),
+            },
+          };
+        });
+      },
+
+      generateAISuggestions: () => {
+        const { mappingState } = get();
+        // Simulate AI suggestion generation with mock data
+        import('@/data/mockMappingData').then(({ mockCustomerMappings, mockOrderMappings }) => {
+          const suggestions = mappingState.selectedSourceTable === 'customers' 
+            ? mockCustomerMappings 
+            : mockOrderMappings;
+          
+          set((state) => ({
+            mappingState: {
+              ...state.mappingState,
+              suggestions,
+            },
+          }));
+        });
+      },
+
+      acceptMapping: (mappingId) => {
+        get().updateFieldMapping(mappingId, { status: 'approved', approvedAt: new Date().toISOString() });
+      },
+
+      rejectMapping: (mappingId) => {
+        get().updateFieldMapping(mappingId, { status: 'rejected' });
+      },
+
+      bulkAcceptHighConfidence: () => {
+        const { mappingState } = get();
+        const highConfidenceMappings = mappingState.suggestions.filter(s => s.confidence >= 90);
+        
+        highConfidenceMappings.forEach(mapping => {
+          get().updateFieldMapping(mapping.id, { status: 'approved', approvedAt: new Date().toISOString() });
+        });
+      },
+
+      completeMapping: () => {
+        set((state) => {
+          console.log('Completing mapping phase');
+          
+          // Auto-approve high confidence suggestions if they exist
+          const updatedSuggestions = state.mappingState.suggestions.map(suggestion => 
+            (suggestion.status === undefined || suggestion.status === 'suggested') && suggestion.confidence >= 80 
+              ? { ...suggestion, status: 'approved' as const, approvedAt: new Date().toISOString() }
+              : suggestion
+          );
+          
+          console.log('Auto-approved suggestions:', updatedSuggestions.filter(s => s.status === 'approved'));
+          
+          return {
+            mappingState: {
+              ...state.mappingState,
+              suggestions: updatedSuggestions,
+              isProcessing: false,
+              progress: 100,
+              currentStep: 'Mapping complete',
+              completedAt: new Date().toISOString(),
+            },
+          };
+        });
+      },
+
+      resetMapping: () => {
+        set((state) => ({
+          mappingState: {
+            isProcessing: false,
+            progress: 0,
+            currentStep: '',
+            selectedSourceTable: null,
+            selectedTargetTable: null,
+            currentTableMapping: null,
+            allMappings: [],
+            suggestions: [],
+            error: null,
+            completedAt: null,
+          },
+        }));
+      },
+
+      // Code Generation actions
+      startCodeGeneration: (step) => set((state) => ({
+        codeGenerationState: {
+          ...state.codeGenerationState,
+          isProcessing: true,
+          currentStep: step,
+          progress: Math.min(state.codeGenerationState.progress + 20, 100),
+        },
+      })),
+
+      setSelectedPlatform: (platform) => set((state) => ({
+        codeGenerationState: {
+          ...state.codeGenerationState,
+          selectedPlatform: platform,
+        },
+      })),
+
+      setGeneratedCode: (platform, code) => set((state) => ({
+        codeGenerationState: {
+          ...state.codeGenerationState,
+          generatedCodes: {
+            ...state.codeGenerationState.generatedCodes,
+            [platform]: code,
+          },
+          isProcessing: false,
+          progress: 100,
+        },
+      })),
+
+      completeCodeGeneration: () => set((state) => ({
+        codeGenerationState: {
+          ...state.codeGenerationState,
+          isProcessing: false,
+          completedAt: new Date().toISOString(),
+        },
+      })),
+
+      // Project completion
+      completeProject: () => {
+        const { currentProject } = get();
+        if (!currentProject) return;
+        
+        const completedProject = {
+          ...currentProject,
+          status: 'completed' as const,
+          updatedAt: new Date().toISOString(),
+          progress: {
+            ...currentProject.progress,
+            completedPhases: ['upload' as const, 'discovery' as const, 'mapping' as const, 'codegen' as const, 'validation' as const],
+            validationComplete: true,
+          }
+        };
+        
+        // Update mockProjects data to persist the completion
+        if (typeof window !== 'undefined') {
+          const existingProjects = JSON.parse(localStorage.getItem('completed-projects') || '[]');
+          const updatedProjects = existingProjects.filter((p: any) => p.id !== completedProject.id);
+          updatedProjects.push(completedProject);
+          localStorage.setItem('completed-projects', JSON.stringify(updatedProjects));
+        }
+        
+        set({ currentProject: completedProject });
+      },
+    }),
+    {
+      name: 'migration-store',
+      partialize: (state) => ({
+        currentProject: state.currentProject,
+        currentPhase: state.currentPhase,
+      }),
+    }
+  )
+);
