@@ -59,12 +59,13 @@ export interface TableNode {
   id: string;
   name: string;
   schema: string;
-  type: 'source' | 'target';
+  type: 'source' | 'target' | 'intermediate'; // Added 'intermediate' type
   dialect: SchemaDialect;
   columns: ColumnNode[];
   rowCount?: number;
   size?: string;
   lastUpdated?: string;
+  position?: { x: number; y: number }; // Added position property
 }
 
 export interface ColumnNode {
@@ -92,13 +93,23 @@ export interface Relationship {
   confidence: number;
 }
 
+export interface TableMappingLine {
+  id: string;
+  sourceTable: string;
+  targetTable: string;
+  confidence: number;
+  path: { x: number; y: number }[];
+}
+
 export interface LineageGraph {
   tables: TableNode[];
   relationships: Relationship[];
+  mappings: TableMappingLine[];
   statistics: {
     totalTables: number;
     totalColumns: number;
     totalRelationships: number;
+    totalMappings: number;
     complexityScore: number;
   };
 }

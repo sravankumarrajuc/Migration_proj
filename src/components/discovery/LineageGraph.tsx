@@ -11,12 +11,12 @@ import {
   Connection,
   Position,
   MarkerType,
-  Handle, // Added Handle import here
+  Handle,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { LineageGraph as LineageGraphType, TableNode, Relationship } from '@/types/migration';
 import { Badge } from '@/components/ui/badge';
-import { Database, Table } from 'lucide-react';
+import { Database } from 'lucide-react';
 
 interface LineageGraphProps {
   lineageGraph: LineageGraphType;
@@ -25,7 +25,7 @@ interface LineageGraphProps {
 interface TableNodeData extends Record<string, unknown> {
   table: TableNode;
   label: string;
-  type: 'source' | 'target';
+  type: 'source' | 'target' | 'intermediate';
 }
 
  // Custom Table Node Component
@@ -68,7 +68,6 @@ interface TableNodeData extends Record<string, unknown> {
        <div className="px-4 py-2 bg-muted/20">
          <div className="flex justify-between text-xs text-muted-foreground">
            <span>{table.columns.length} columns</span>
-           {table.rowCount && <span>{table.rowCount.toLocaleString()} rows</span>}
          </div>
        </div>
        
@@ -100,52 +99,47 @@ const nodeTypes = {
 };
 
 export function LineageGraph({ lineageGraph }: LineageGraphProps) {
-  // Convert tables to React Flow nodes
   const initialNodes: Node<TableNodeData>[] = useMemo(() => {
-    const sourceTables = lineageGraph.tables.filter(t => t.type === 'source');
-    const targetTables = lineageGraph.tables.filter(t => t.type === 'target');
-    
-    const nodes: Node<TableNodeData>[] = [];
-    
-    // Position source tables on the left
-    sourceTables.forEach((table, index) => {
-      nodes.push({
-        id: table.id,
-        type: 'tableNode',
-        position: { x: 100, y: 100 + index * 200 },
-        data: {
-          table,
-          label: table.name,
-          type: 'source',
-        },
-        // Removed targetPosition and sourcePosition from node definition
-      });
-    });
-    
-    // Position target tables on the right
-    targetTables.forEach((table, index) => {
-      nodes.push({
-        id: table.id,
-        type: 'tableNode',
-        position: { x: 600, y: 100 + index * 200 },
-        data: {
-          table,
-          label: table.name,
-          type: 'target',
-        },
-        // Removed targetPosition and sourcePosition from node definition
-      });
-    });
-    
-    console.log('Initial Nodes:', nodes); // Debugging
-    return nodes;
+    return lineageGraph.tables.map(table => ({
+      id: table.id,
+      type: 'tableNode',
+      position: table.position || { x: 0, y: 0 }, // Use position from data, or default
+      data: {
+        table,
+        label: table.name,
+        type: table.type,
+      },
+    }));
   }, [lineageGraph.tables]);
 
-  // Convert relationships to React Flow edges
   const initialEdges: Edge[] = useMemo(() => {
-    const edges = lineageGraph.relationships.map((rel) => {
-      const sourceTableId = lineageGraph.tables.find(t => t.name === rel.sourceTable)?.id || '';
-      const targetTableId = lineageGraph.tables.find(t => t.name === rel.targetTable)?.id || '';
+    const relationshipEdges = lineageGraph.relationships.map((rel) => {
+      const sourceTable = lineageGraph.tables.find(t => t.name === rel.sourceTable);
+      const targetTable = lineageGraph.tables.find(t => t.name === rel.targetTable);
+
+      if (!sourceTable || !targetTable) {
+        return null; // Skip if tables are not found
+      }
+
+      const isSourceToSource = sourceTable.type === 'source' && targetTable.type === 'source';
+      const isSourceToTarget = sourceTable.type === 'source' && targetTable.type === 'target';
+
+      let edgeStyle = {};
+      let markerColor = '';
+      let animated = true;
+
+      if (isSourceToSource) {
+        edgeStyle = { strokeWidth: 3, stroke: '#3b82f6' }; // Thick blue line
+        markerColor = '#3b82f6';
+      } else if (isSourceToTarget) {
+        edgeStyle = { strokeDasharray: '5 5', stroke: '#22c55e', strokeWidth: 2 }; // Dotted green line
+        markerColor = '#22c55e';
+      } else {
+        // Default or other relationship types (if any)
+        edgeStyle = { stroke: '#999', strokeWidth: 1 };
+        markerColor = '#999';
+        animated = false;
+      }
 
       // Determine label based on relationship type
       let label = '';
@@ -159,17 +153,14 @@ export function LineageGraph({ lineageGraph }: LineageGraphProps) {
 
       return {
         id: rel.id,
-        source: sourceTableId,
-        target: targetTableId,
+        source: sourceTable.id,
+        target: targetTable.id,
         type: 'smoothstep',
-        animated: true,
-        style: {
-          stroke: rel.confidence > 0.9 ? '#22c55e' : '#3b82f6',
-          strokeWidth: 2,
-        },
+        animated: animated,
+        style: edgeStyle,
         markerEnd: {
           type: MarkerType.ArrowClosed,
-          color: rel.confidence > 0.9 ? '#22c55e' : '#3b82f6',
+          color: markerColor,
         },
         label: label,
         labelStyle: {
@@ -181,10 +172,41 @@ export function LineageGraph({ lineageGraph }: LineageGraphProps) {
           fillOpacity: 0.9,
         },
       };
-    });
-    console.log('Initial Edges:', edges); // Debugging
-    return edges;
-  }, [lineageGraph.relationships, lineageGraph.tables]);
+    }).filter(Boolean) as Edge[]; // Filter out nulls
+
+    const mappingEdges = lineageGraph.mappings.map((mapping) => {
+      const sourceTable = lineageGraph.tables.find(t => t.name === mapping.sourceTable);
+      const targetTable = lineageGraph.tables.find(t => t.name === mapping.targetTable);
+
+      if (!sourceTable || !targetTable) {
+        return null; // Skip if tables are not found
+      }
+
+      return {
+        id: mapping.id,
+        source: sourceTable.id,
+        target: targetTable.id,
+        type: 'smoothstep', // Using smoothstep for now, can be 'bezier' or 'step'
+        animated: true,
+        style: { strokeWidth: 2, stroke: '#f97316' }, // Orange for mappings
+        markerEnd: {
+          type: MarkerType.ArrowClosed,
+          color: '#f97316',
+        },
+        label: `${Math.round(mapping.confidence * 100)}%`,
+        labelStyle: {
+          fontSize: 11,
+          fontWeight: 500,
+        },
+        labelBgStyle: {
+          fill: '#ffffff',
+          fillOpacity: 0.9,
+        },
+      };
+    }).filter(Boolean) as Edge[];
+
+    return [...relationshipEdges, ...mappingEdges];
+  }, [lineageGraph.relationships, lineageGraph.tables, lineageGraph.mappings]);
 
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);

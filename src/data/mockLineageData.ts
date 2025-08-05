@@ -258,29 +258,6 @@ export const mockRelationships: Relationship[] = [
   { id: 'rel-8', sourceTable: 'DB2_COMMISSIONS', sourceColumn: 'AGENT_ID', targetTable: 'DB2_AGENTS', targetColumn: 'AGENT_ID', relationshipType: 'one-to-many', confidence: 0.99 },
   { id: 'rel-9', sourceTable: 'DB2_COMMISSIONS', sourceColumn: 'CLM_ID', targetTable: 'DB2_CLAIMS', targetColumn: 'CLM_ID', relationshipType: 'one-to-many', confidence: 0.99 },
 ];
-
-export const mockLineageGraph: LineageGraph = {
-  tables: mockTables,
-  relationships: mockRelationships,
-  statistics: {
-    totalTables: mockTables.length,
-    totalColumns: mockTables.reduce((sum, table) => sum + table.columns.length, 0),
-    totalRelationships: mockRelationships.length,
-    complexityScore: 8.9 
-  }
-};
-
-// Discovery processing steps
-export const discoverySteps = [
-  { step: 'Analyzing schema files...', duration: 1000 },
-  { step: 'Extracting table definitions...', duration: 1500 },
-  { step: 'Identifying column relationships...', duration: 2000 },
-  { step: 'Calculating data lineage...', duration: 1800 },
-  { step: 'Generating metadata catalog...', duration: 1200 },
-  { step: 'Building lineage graph...', duration: 800 },
-  { step: 'Discovery complete!', duration: 500 }
-];
-
 // =================================================================================
 // DFD MAPPING DATA
 // =================================================================================
@@ -323,3 +300,28 @@ export const dfdMappingData = {
     { id: 'dfd-map-10', sourceTable: 'DB2_RISK_RATINGS', targetTable: 'risk_ratings_denorm', confidence: 0.95, path: [{ x: 250, y: 1450 }, { x: 800, y: 1450 }] },
   ]
 };
+
+export const mockLineageGraph: LineageGraph = {
+  tables: mockTables,
+  relationships: mockRelationships,
+  mappings: dfdMappingData.mappings, // Add the mappings here
+  statistics: {
+    totalTables: mockTables.length,
+    totalColumns: mockTables.reduce((sum, table) => sum + table.columns.length, 0),
+    totalRelationships: mockRelationships.length,
+    totalMappings: dfdMappingData.mappings.length, // Add totalMappings
+    complexityScore: 8.9
+  }
+};
+
+// Discovery processing steps
+export const discoverySteps = [
+  { step: 'Analyzing schema files...', duration: 1000 },
+  { step: 'Extracting table definitions...', duration: 1500 },
+  { step: 'Identifying column relationships...', duration: 2000 },
+  { step: 'Calculating data lineage...', duration: 1800 },
+  { step: 'Generating metadata catalog...', duration: 1200 },
+  { step: 'Building lineage graph...', duration: 800 },
+  { step: 'Discovery complete!', duration: 500 }
+];
+
