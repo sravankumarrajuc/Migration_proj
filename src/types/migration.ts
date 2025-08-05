@@ -204,3 +204,12 @@ export interface CodeGenerationState {
   error: string | null;
   completedAt: string | null;
 }
+
+// User Profile Types
+export interface UserProfile {
+  id: string;
+  name: string;
+  email: string;
+  picture?: string;
+  authenticated: boolean;
+}

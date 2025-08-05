@@ -1,23 +1,27 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { 
-  Project, 
-  SchemaFile, 
-  MigrationPhase, 
-  DiscoveryState, 
-  LineageGraph, 
-  MappingState, 
-  TableMapping, 
+import {
+  Project,
+  SchemaFile,
+  MigrationPhase,
+  DiscoveryState,
+  LineageGraph,
+  MappingState,
+  TableMapping,
   FieldMapping,
   CodeGenerationState,
   CodePlatform,
-  GeneratedCode
+  GeneratedCode,
+  UserProfile
 } from '@/types/migration';
 
 interface MigrationState {
   // Current project context
   currentProject: Project | null;
   currentPhase: MigrationPhase;
+  
+  // User profile
+  userProfile: UserProfile;
   
   // Schema upload state
   sourceFiles: SchemaFile[];
@@ -43,6 +47,10 @@ interface MigrationState {
   clearFiles: () => void;
   setUploadProgress: (progress: number) => void;
   canProceedToNextPhase: () => boolean;
+  
+  // User profile actions
+  setUserProfile: (profile: UserProfile) => void;
+  clearUserProfile: () => void;
   
   // Discovery actions
   startDiscovery: () => void;
@@ -81,6 +89,12 @@ export const useMigrationStore = create<MigrationState>()(
     (set, get) => ({
       currentProject: null,
       currentPhase: 'upload',
+      userProfile: {
+        id: '',
+        name: 'Alex Chen',
+        email: '',
+        authenticated: false
+      },
       sourceFiles: [],
       targetFiles: [],
       uploadProgress: 0,
@@ -581,12 +595,29 @@ export const useMigrationStore = create<MigrationState>()(
         
         set({ currentProject: completedProject });
       },
+      
+      // User profile actions
+      setUserProfile: (profile) => {
+        set({ userProfile: profile });
+      },
+      
+      clearUserProfile: () => {
+        set({
+          userProfile: {
+            id: '',
+            name: 'Alex Chen',
+            email: '',
+            authenticated: false
+          }
+        });
+      },
     }),
     {
       name: 'migration-store',
       partialize: (state) => ({
         currentProject: state.currentProject,
         currentPhase: state.currentPhase,
+        userProfile: state.userProfile, // Persist user profile
       }),
     }
   )
