@@ -1,22 +1,16 @@
-import { useCallback, useMemo } from 'react';
+import { useMemo } from 'react';
 import {
   ReactFlow,
   Node,
-  Edge,
   Controls,
   Background,
   useNodesState,
-  useEdgesState,
-  addEdge,
-  Connection,
   Position,
-  MarkerType,
-  Handle, // Added Handle import here
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { LineageGraph as LineageGraphType, TableNode, Relationship } from '@/types/migration';
+import { LineageGraph as LineageGraphType, TableNode } from '@/types/migration';
 import { Badge } from '@/components/ui/badge';
-import { Database, Table } from 'lucide-react';
+import { Database } from 'lucide-react';
 
 interface LineageGraphProps {
   lineageGraph: LineageGraphType;
@@ -36,16 +30,6 @@ interface TableNodeData extends Record<string, unknown> {
      <div className={`bg-card border rounded-lg shadow-lg min-w-[250px] ${
        type === 'source' ? 'border-blue-200' : 'border-green-200'
      }`}>
-       {/* Source Handle (for source tables) */}
-       {type === 'source' && (
-         <Handle type="source" position={Position.Right} className="w-3 h-3 bg-blue-500" />
-       )}
-
-       {/* Target Handle (for target tables) */}
-       {type === 'target' && (
-         <Handle type="target" position={Position.Left} className="w-3 h-3 bg-green-500" />
-       )}
-
        {/* Header */}
        <div className={`px-4 py-3 border-b rounded-t-lg ${
          type === 'source'
@@ -64,11 +48,10 @@ interface TableNodeData extends Record<string, unknown> {
          </div>
        </div>
        
-       {/* Stats */}
+       {/* Stats - Removed rowCount and size display */}
        <div className="px-4 py-2 bg-muted/20">
          <div className="flex justify-between text-xs text-muted-foreground">
            <span>{table.columns.length} columns</span>
-           {table.rowCount && <span>{table.rowCount.toLocaleString()} rows</span>}
          </div>
        </div>
        
@@ -100,118 +83,78 @@ const nodeTypes = {
 };
 
 export function LineageGraph({ lineageGraph }: LineageGraphProps) {
-  // Convert tables to React Flow nodes
-  const initialNodes: Node<TableNodeData>[] = useMemo(() => {
-    const sourceTables = lineageGraph.tables.filter(t => t.type === 'source');
-    const targetTables = lineageGraph.tables.filter(t => t.type === 'target');
-    
-    const nodes: Node<TableNodeData>[] = [];
-    
-    // Position source tables on the left
-    sourceTables.forEach((table, index) => {
-      nodes.push({
+  const sourceNodes: Node<TableNodeData>[] = useMemo(() => {
+    return lineageGraph.tables
+      .filter(t => t.type === 'source')
+      .map((table, index) => ({
         id: table.id,
         type: 'tableNode',
-        position: { x: 100, y: 100 + index * 200 },
+        position: { x: 50, y: 50 + index * 200 },
         data: {
           table,
           label: table.name,
           type: 'source',
         },
-        // Removed targetPosition and sourcePosition from node definition
-      });
-    });
-    
-    // Position target tables on the right
-    targetTables.forEach((table, index) => {
-      nodes.push({
+      }));
+  }, [lineageGraph.tables]);
+
+  const targetNodes: Node<TableNodeData>[] = useMemo(() => {
+    return lineageGraph.tables
+      .filter(t => t.type === 'target')
+      .map((table, index) => ({
         id: table.id,
         type: 'tableNode',
-        position: { x: 600, y: 100 + index * 200 },
+        position: { x: 50, y: 50 + index * 200 },
         data: {
           table,
           label: table.name,
           type: 'target',
         },
-        // Removed targetPosition and sourcePosition from node definition
-      });
-    });
-    
-    console.log('Initial Nodes:', nodes); // Debugging
-    return nodes;
+      }));
   }, [lineageGraph.tables]);
 
-  // Convert relationships to React Flow edges
-  const initialEdges: Edge[] = useMemo(() => {
-    const edges = lineageGraph.relationships.map((rel) => {
-      const sourceTableId = lineageGraph.tables.find(t => t.name === rel.sourceTable)?.id || '';
-      const targetTableId = lineageGraph.tables.find(t => t.name === rel.targetTable)?.id || '';
-
-      // Determine label based on relationship type
-      let label = '';
-      if (rel.relationshipType === 'one-to-one') {
-        label = '1:1';
-      } else if (rel.relationshipType === 'one-to-many') {
-        label = '1:M';
-      } else {
-        label = `${Math.round(rel.confidence * 100)}%`; // Fallback to confidence if type is unknown
-      }
-
-      return {
-        id: rel.id,
-        source: sourceTableId,
-        target: targetTableId,
-        type: 'smoothstep',
-        animated: true,
-        style: {
-          stroke: rel.confidence > 0.9 ? '#22c55e' : '#3b82f6',
-          strokeWidth: 2,
-        },
-        markerEnd: {
-          type: MarkerType.ArrowClosed,
-          color: rel.confidence > 0.9 ? '#22c55e' : '#3b82f6',
-        },
-        label: label,
-        labelStyle: {
-          fontSize: 11,
-          fontWeight: 500,
-        },
-        labelBgStyle: {
-          fill: '#ffffff',
-          fillOpacity: 0.9,
-        },
-      };
-    });
-    console.log('Initial Edges:', edges); // Debugging
-    return edges;
-  }, [lineageGraph.relationships, lineageGraph.tables]);
-
-  const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
-  const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
-
-  const onConnect = useCallback(
-    (params: Connection) => setEdges((eds) => addEdge(params, eds)),
-    [setEdges]
-  );
+  const [sourceGraphNodes, , onSourceNodesChange] = useNodesState(sourceNodes);
+  const [targetGraphNodes, , onTargetNodesChange] = useNodesState(targetNodes);
 
   return (
-    <div className="h-[600px] w-full border rounded-lg bg-background">
-      <ReactFlow
-        nodes={nodes}
-        edges={edges}
-        onNodesChange={onNodesChange}
-        onEdgesChange={onEdgesChange}
-        onConnect={onConnect}
-        nodeTypes={nodeTypes}
-        fitView
-        attributionPosition="bottom-right"
-        className="bg-background"
-        minZoom={0.3}
-        maxZoom={2}
-      >
-        <Controls className="bg-background border" />
-        <Background color="#e2e8f0" gap={20} size={1} />
-      </ReactFlow>
+    <div className="flex w-full gap-4">
+      {/* Source Graph */}
+      <div className="h-[600px] w-1/2 border rounded-lg bg-background">
+        <h3 className="text-lg font-semibold p-4 border-b">Source Tables</h3>
+        <ReactFlow
+          nodes={sourceGraphNodes}
+          edges={[]} // No edges for source graph
+          onNodesChange={onSourceNodesChange}
+          nodeTypes={nodeTypes}
+          fitView
+          attributionPosition="bottom-right"
+          className="bg-background"
+          minZoom={0.3}
+          maxZoom={2}
+        >
+          <Controls className="bg-background border" />
+          <Background color="#e2e8f0" gap={20} size={1} />
+        </ReactFlow>
+      </div>
+
+      {/* Target Graph */}
+      <div className="h-[600px] w-1/2 border rounded-lg bg-background">
+        <h3 className="text-lg font-semibold p-4 border-b">Target Tables</h3>
+        <ReactFlow
+          nodes={targetGraphNodes}
+          edges={[]} // No edges for target graph
+          onNodesChange={onTargetNodesChange}
+          nodeTypes={nodeTypes}
+          fitView
+          attributionPosition="bottom-right"
+          className="bg-background"
+          minZoom={0.3}
+          maxZoom={2}
+        >
+          <Controls className="bg-background border" />
+          <Background color="#e2e8f0" gap={20} size={1} />
+        </ReactFlow>
+      </div>
     </div>
   );
 }
