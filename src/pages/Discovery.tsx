@@ -227,7 +227,7 @@ export default function Discovery() {
                 <div className="space-y-2">
                   <div className="flex items-center justify-between text-sm">
                     <span>Schemas Analyzed</span>
-                    <Badge variant="outline">2 sources, 1 target</Badge>
+                    <Badge variant="outline">1 sources, 1 target</Badge>
                   </div>
                   <div className="flex items-center justify-between text-sm">
                     <span>Analysis Quality</span>

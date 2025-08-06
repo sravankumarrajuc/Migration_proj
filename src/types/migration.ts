@@ -216,7 +216,7 @@ export interface GeneratedCode {
 
 export interface CodeOptimization {
   id: string;
-  type: 'performance' | 'readability' | 'best-practice';
+  type: 'performance' | 'readability' | 'best-practice' | 'cost-optimization';
   title: string;
   description: string;
   suggestion: string;

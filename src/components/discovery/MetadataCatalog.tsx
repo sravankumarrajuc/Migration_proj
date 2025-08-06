@@ -41,13 +41,11 @@ function ExpandedTableRow({ table, isExpanded, onToggle }: ExpandedTableRowProps
         <TableCell>{dialectDisplayNames[table.dialect] || table.dialect}</TableCell>
         <TableCell>{table.schema}</TableCell>
         <TableCell>{table.columns.length}</TableCell>
-        <TableCell>{table.rowCount?.toLocaleString() || '-'}</TableCell>
-        <TableCell>{table.size || '-'}</TableCell>
       </TableRow>
       
       {isExpanded && (
         <TableRow>
-          <TableCell colSpan={7} className="p-0">
+          <TableCell colSpan={5} className="p-0">
             <Collapsible open={isExpanded}>
               <CollapsibleContent>
                 <div className="bg-muted/20 p-4 border-t">
@@ -240,8 +238,6 @@ export function MetadataCatalog({ lineageGraph }: MetadataCatalogProps) {
                 <TableHead>Dialect</TableHead>
                 <TableHead>Schema</TableHead>
                 <TableHead>Columns</TableHead>
-                <TableHead>Rows</TableHead>
-                <TableHead>Size</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

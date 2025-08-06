@@ -358,10 +358,10 @@ export const mockLineageGraph: LineageGraph = {
   sourceToSourceMappings: [...mockSourceToSourceMappings, ...mockPrimaryKeyForeignkeyMappingsAsSourceToSource], // Add the new source-to-source mappings
   statistics: {
     totalTables: mockTables.length,
-    totalColumns: mockTables.reduce((sum, table) => sum + table.columns.length, 0),
+    totalColumns: 190,
     totalRelationships: mockRelationships.length,
     totalMappings: dfdMappingData.mappings.length,
-    complexityScore: 8.9
+    complexityScore: 7.2
   }
 };
 
