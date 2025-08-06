@@ -17,6 +17,8 @@ interface CodeOptimizerProps {
   platform: CodePlatform;
   code: string;
   onApplyOptimization: (optimizedCode: string) => void;
+  originalCodeForComparison: string;
+  optimizedCodeForComparison: string;
 }
 
 const optimizationIcons = {
@@ -37,10 +39,12 @@ export function CodeOptimizer({
   onOpenChange,
   platform,
   code,
-  onApplyOptimization
+  onApplyOptimization,
+  originalCodeForComparison,
+  optimizedCodeForComparison
 }: CodeOptimizerProps) {
   const [selectedOptimizations, setSelectedOptimizations] = useState<string[]>([]);
-  const [optimizedCode, setOptimizedCode] = useState(code);
+  const [optimizedCode, setOptimizedCode] = useState(code); // This state will hold the *currently* optimized code within the modal
   const [isOptimizing, setIsOptimizing] = useState(false);
 
   const toggleOptimization = (optimizationId: string) => {
@@ -258,8 +262,8 @@ export function CodeOptimizer({
                   key={open ? 'diff-editor-open' : 'diff-editor-closed'}
                   height="100%"
                   language={platform === 'bigquery' ? 'sql' : platform === 'dbt' ? 'sql' : 'python'}
-                  original={code}
-                  modified={optimizedCode || code}
+                  original={originalCodeForComparison || code}
+                  modified={optimizedCodeForComparison || optimizedCode || code}
                   theme="vs-dark"
                   options={{
                     readOnly: true,

@@ -11,56 +11,24 @@ import { FileText, AlertCircle, CheckCircle, Settings } from 'lucide-react';
 
 interface FileComparisonProps {
   tolerance: number;
+  legacyCode?: string;
+  migratedCode?: string;
 }
 
-export function FileComparison({ tolerance }: FileComparisonProps) {
-  const [selectedFile, setSelectedFile] = useState('customer_data.csv');
+export function FileComparison({ tolerance, legacyCode, migratedCode }: FileComparisonProps) {
   const [showSettings, setShowSettings] = useState(false);
   const [currentTolerance, setCurrentTolerance] = useState(tolerance);
 
-  const mockFiles = [
-    { 
-      name: 'customer_data.csv', 
-      status: 'match', 
-      differences: 0,
-      legacy: `customer_id,name,email,created_date
-1,John Doe,john@example.com,2024-01-15
-2,Jane Smith,jane@example.com,2024-01-16
-3,Bob Johnson,bob@example.com,2024-01-17`,
-      migrated: `customer_id,name,email,created_date
-1,John Doe,john@example.com,2024-01-15
-2,Jane Smith,jane@example.com,2024-01-16
-3,Bob Johnson,bob@example.com,2024-01-17`
-    },
-    { 
-      name: 'order_summary.csv', 
-      status: 'minor_diff', 
-      differences: 2,
-      legacy: `order_id,customer_id,total_amount,order_date
-101,1,299.99,2024-01-20
-102,2,149.50,2024-01-21
-103,3,599.00,2024-01-22`,
-      migrated: `order_id,customer_id,total_amount,order_date
-101,1,300.00,2024-01-20
-102,2,149.50,2024-01-21
-103,3,599.01,2024-01-22`
-    },
-    { 
-      name: 'product_catalog.csv', 
-      status: 'anomaly', 
-      differences: 5,
-      legacy: `product_id,name,price,category
-1,Widget A,29.99,Electronics
-2,Widget B,19.99,Electronics
-3,Gadget X,99.99,Gadgets`,
-      migrated: `product_id,name,price,category
-1,Widget A,29.99,Electronics
-2,Widget B,NULL,Electronics
-3,Gadget X,99.99,Gadgets`
-    },
-  ];
+  // If codes are provided as props, use them directly
+  const displayLegacyCode = legacyCode || '';
+  const displayMigratedCode = migratedCode || '';
 
-  const currentFile = mockFiles.find(f => f.name === selectedFile) || mockFiles[0];
+  // Determine language based on content (simple check for SQL)
+  const language = (displayLegacyCode.includes('CREATE OR REPLACE TABLE') || displayMigratedCode.includes('CREATE OR REPLACE TABLE')) ? 'sql' : 'csv';
+
+  // Calculate differences (a very basic example, real diffing would be more complex)
+  const differences = displayLegacyCode !== displayMigratedCode ? 1 : 0;
+  const status = differences > 0 ? 'minor_diff' : 'match';
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -138,27 +106,7 @@ export function FileComparison({ tolerance }: FileComparisonProps) {
           )}
 
           {/* File Selection */}
-          <div className="space-y-2">
-            <Label>Select File to Compare</Label>
-            <Select value={selectedFile} onValueChange={setSelectedFile}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {mockFiles.map((file) => (
-                  <SelectItem key={file.name} value={file.name}>
-                    <div className="flex items-center gap-2">
-                      {getStatusIcon(file.status)}
-                      <span>{file.name}</span>
-                      <Badge variant={getStatusColor(file.status)} className="ml-auto">
-                        {file.differences === 0 ? 'Perfect Match' : `${file.differences} diffs`}
-                      </Badge>
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          {/* Removed file selection as data now comes from props */}
         </CardContent>
       </Card>
 
@@ -172,12 +120,12 @@ export function FileComparison({ tolerance }: FileComparisonProps) {
               Legacy Data
               <Badge variant="outline" className="ml-auto">Source</Badge>
             </CardTitle>
-            <CardDescription>{currentFile.name}</CardDescription>
+            <CardDescription>Legacy Code</CardDescription>
           </CardHeader>
           <CardContent className="p-0">
             <CodeEditor
-              code={currentFile.legacy}
-              language="csv"
+              code={displayLegacyCode}
+              language={language}
               readOnly={true}
               height="400px"
             />
@@ -192,12 +140,12 @@ export function FileComparison({ tolerance }: FileComparisonProps) {
               Migrated Data
               <Badge variant="outline" className="ml-auto">Target</Badge>
             </CardTitle>
-            <CardDescription>{currentFile.name}</CardDescription>
+            <CardDescription>Migrated Code</CardDescription>
           </CardHeader>
           <CardContent className="p-0">
             <CodeEditor
-              code={currentFile.migrated}
-              language="csv"
+              code={displayMigratedCode}
+              language={language}
               readOnly={true}
               height="400px"
             />
@@ -214,9 +162,9 @@ export function FileComparison({ tolerance }: FileComparisonProps) {
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <span className="text-sm font-medium">File Status:</span>
-              <Badge variant={getStatusColor(currentFile.status)}>
-                {getStatusIcon(currentFile.status)}
-                <span className="ml-1 capitalize">{currentFile.status.replace('_', ' ')}</span>
+              <Badge variant={getStatusColor(status)}>
+                {getStatusIcon(status)}
+                <span className="ml-1 capitalize">{status.replace('_', ' ')}</span>
               </Badge>
             </div>
             
@@ -225,7 +173,7 @@ export function FileComparison({ tolerance }: FileComparisonProps) {
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div>
                 <span className="text-muted-foreground">Differences Found:</span>
-                <span className="ml-2 font-medium">{currentFile.differences}</span>
+                <span className="ml-2 font-medium">{differences}</span>
               </div>
               <div>
                 <span className="text-muted-foreground">Tolerance Applied:</span>
@@ -233,11 +181,11 @@ export function FileComparison({ tolerance }: FileComparisonProps) {
               </div>
             </div>
 
-            {currentFile.differences > 0 && (
+            {differences > 0 && (
               <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
                 <p className="text-sm text-amber-800">
                   <AlertCircle className="h-4 w-4 inline mr-1" />
-                  Differences detected in numerical values. Review tolerance settings if needed.
+                  Differences detected. Review the code.
                 </p>
               </div>
             )}
