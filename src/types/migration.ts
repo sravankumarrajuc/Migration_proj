@@ -59,12 +59,13 @@ export interface TableNode {
   id: string;
   name: string;
   schema: string;
-  type: 'source' | 'target';
+  type: 'source' | 'target' | 'intermediate'; // Added 'intermediate' type
   dialect: SchemaDialect;
   columns: ColumnNode[];
   rowCount?: number;
   size?: string;
   lastUpdated?: string;
+  position?: { x: number; y: number }; // Added position property
 }
 
 export interface ColumnNode {
@@ -92,13 +93,43 @@ export interface Relationship {
   confidence: number;
 }
 
+export interface TableMappingLine {
+  id: string;
+  sourceTable: string;
+  targetTable: string;
+  confidence: number;
+  path: { x: number; y: number }[];
+}
+
+export interface KeyMappingLine {
+  id: string;
+  sourceTable: string;
+  sourceColumn: string;
+  targetTable: string;
+  targetColumn: string;
+  confidence: number;
+  path?: { x: number; y: number }[]; // Optional path for key mappings
+}
+
+export interface SourceToSourceMappingLine {
+  id: string;
+  sourceTable: string;
+  targetTable: string;
+  confidence: number;
+  description?: string; // Optional description for the mapping
+}
+
 export interface LineageGraph {
   tables: TableNode[];
   relationships: Relationship[];
+  mappings: TableMappingLine[];
+  keyMappings: KeyMappingLine[];
+  sourceToSourceMappings: SourceToSourceMappingLine[]; // New mapping type
   statistics: {
     totalTables: number;
     totalColumns: number;
     totalRelationships: number;
+    totalMappings: number;
     complexityScore: number;
   };
 }
@@ -212,4 +243,10 @@ export interface UserProfile {
   email: string;
   picture?: string;
   authenticated: boolean;
+}
+
+export interface TableNodeData extends Record<string, unknown> {
+  table: TableNode;
+  label: string;
+  type: 'source' | 'target' | 'intermediate';
 }

@@ -816,29 +816,6 @@ export const mockRelationships: Relationship[] = [
     confidence: 0.70
   }
 ];
-
-export const mockLineageGraph: LineageGraph = {
-  tables: mockTables,
-  relationships: mockRelationships,
-  statistics: {
-    totalTables: mockTables.length,
-    totalColumns: mockTables.reduce((sum, table) => sum + table.columns.length, 0),
-    totalRelationships: mockRelationships.length,
-    complexityScore: 8.5
-  }
-};
-
-// Discovery processing steps
-export const discoverySteps = [
-  { step: 'Analyzing schema files...', duration: 1000 },
-  { step: 'Extracting table definitions...', duration: 1500 },
-  { step: 'Identifying column relationships...', duration: 2000 },
-  { step: 'Calculating data lineage...', duration: 1800 },
-  { step: 'Generating metadata catalog...', duration: 1200 },
-  { step: 'Building lineage graph...', duration: 800 },
-  { step: 'Discovery complete!', duration: 500 }
-];
-
 // DFD Mapping Data - Simplified format for drawing mapping lines between source and target tables
 export const dfdMappingData = {
   tables: [
@@ -1109,3 +1086,29 @@ export const dfdMappingData = {
     }
   ]
 };
+
+export const mockLineageGraph: LineageGraph = {
+  tables: mockTables,
+  relationships: mockRelationships,
+  mappings: dfdMappingData.mappings,
+  statistics: {
+    totalTables: mockTables.length,
+    totalColumns: mockTables.reduce((sum, table) => sum + table.columns.length, 0),
+    totalRelationships: mockRelationships.length,
+    totalMappings: dfdMappingData.mappings.length,
+    complexityScore: 8.5
+  }
+};
+
+// Discovery processing steps
+export const discoverySteps = [
+  { step: 'Analyzing schema files...', duration: 1000 },
+  { step: 'Extracting table definitions...', duration: 1500 },
+  { step: 'Identifying column relationships...', duration: 2000 },
+  { step: 'Calculating data lineage...', duration: 1800 },
+  { step: 'Generating metadata catalog...', duration: 1200 },
+  { step: 'Building lineage graph...', duration: 800 },
+  { step: 'Discovery complete!', duration: 500 }
+];
+
+

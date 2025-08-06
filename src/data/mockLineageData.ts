@@ -1,4 +1,4 @@
-import { LineageGraph, TableNode, ColumnNode, Relationship } from '@/types/migration';
+import { LineageGraph, TableNode, ColumnNode, Relationship, KeyMappingLine, SourceToSourceMappingLine } from '@/types/migration';
 
 // =================================================================================
 // DB2 SOURCE DEFINITIONS
@@ -228,23 +228,23 @@ const bqAgentsDenormColumns: ColumnNode[] = [
 
 export const mockTables: TableNode[] = [
   // DB2 Source Tables
-  { id: 'src-db2-claims', name: 'DB2_CLAIMS', schema: 'INSURANCE', type: 'source', dialect: 'db2', columns: db2ClaimsColumns, rowCount: 85230, size: '15.2 MB', lastUpdated: '2025-08-05T10:30:00Z' },
-  { id: 'src-db2-customers', name: 'DB2_CUSTOMERS', schema: 'INSURANCE', type: 'source', dialect: 'db2', columns: db2CustomersColumns, rowCount: 32145, size: '8.1 MB', lastUpdated: '2025-08-05T09:45:00Z' },
-  { id: 'src-db2-payments', name: 'DB2_PAYMENTS', schema: 'INSURANCE', type: 'source', dialect: 'db2', columns: db2PaymentsColumns, rowCount: 125432, size: '22.5 MB', lastUpdated: '2025-08-05T11:00:00Z' },
-  { id: 'src-db2-adjustments', name: 'DB2_ADJUSTMENTS', schema: 'INSURANCE', type: 'source', dialect: 'db2', columns: db2AdjustmentsColumns, rowCount: 45210, size: '7.8 MB', lastUpdated: '2025-08-05T10:55:00Z' },
-  { id: 'src-db2-policies', name: 'DB2_POLICIES', schema: 'INSURANCE', type: 'source', dialect: 'db2', columns: db2PoliciesColumns, rowCount: 41332, size: '12.3 MB', lastUpdated: '2025-08-05T09:30:00Z' },
-  { id: 'src-db2-risk-ratings', name: 'DB2_RISK_RATINGS', schema: 'INSURANCE', type: 'source', dialect: 'db2', columns: db2RiskRatingsColumns, rowCount: 1500, size: '0.5 MB', lastUpdated: '2025-08-01T12:00:00Z' },
-  { id: 'src-db2-claim-events', name: 'DB2_CLAIM_EVENTS', schema: 'INSURANCE', type: 'source', dialect: 'db2', columns: db2ClaimEventsColumns, rowCount: 250600, size: '45.1 MB', lastUpdated: '2025-08-05T11:15:00Z' },
-  { id: 'src-db2-policy-history', name: 'DB2_POLICY_HISTORY', schema: 'INSURANCE', type: 'source', dialect: 'db2', columns: db2PolicyHistoryColumns, rowCount: 98765, size: '18.9 MB', lastUpdated: '2025-08-05T09:35:00Z' },
-  { id: 'src-db2-agents', name: 'DB2_AGENTS', schema: 'INSURANCE', type: 'source', dialect: 'db2', columns: db2AgentsColumns, rowCount: 850, size: '0.3 MB', lastUpdated: '2025-07-29T14:00:00Z' },
-  { id: 'src-db2-commissions', name: 'DB2_COMMISSIONS', schema: 'INSURANCE', type: 'source', dialect: 'db2', columns: db2CommissionsColumns, rowCount: 110234, size: '19.8 MB', lastUpdated: '2025-08-05T11:10:00Z' },
+  { id: 'src-db2-claims', name: 'DB2_CLAIMS', schema: 'INSURANCE', type: 'source', dialect: 'db2', columns: db2ClaimsColumns, rowCount: 85230, size: '15.2 MB', lastUpdated: '2025-08-05T10:30:00Z', position: { x: 50, y: 500 } },
+  { id: 'src-db2-customers', name: 'DB2_CUSTOMERS', schema: 'INSURANCE', type: 'source', dialect: 'db2', columns: db2CustomersColumns, rowCount: 32145, size: '8.1 MB', lastUpdated: '2025-08-05T09:45:00Z', position: { x: 50, y: 50 } },
+  { id: 'src-db2-payments', name: 'DB2_PAYMENTS', schema: 'INSURANCE', type: 'source', dialect: 'db2', columns: db2PaymentsColumns, rowCount: 125432, size: '22.5 MB', lastUpdated: '2025-08-05T11:00:00Z', position: { x: 50, y: 650 } },
+  { id: 'src-db2-adjustments', name: 'DB2_ADJUSTMENTS', schema: 'INSURANCE', type: 'source', dialect: 'db2', columns: db2AdjustmentsColumns, rowCount: 45210, size: '7.8 MB', lastUpdated: '2025-08-05T10:55:00Z', position: { x: 50, y: 800 } },
+  { id: 'src-db2-policies', name: 'DB2_POLICIES', schema: 'INSURANCE', type: 'source', dialect: 'db2', columns: db2PoliciesColumns, rowCount: 41332, size: '12.3 MB', lastUpdated: '2025-08-05T09:30:00Z', position: { x: 50, y: 200 } },
+  { id: 'src-db2-risk-ratings', name: 'DB2_RISK_RATINGS', schema: 'INSURANCE', type: 'source', dialect: 'db2', columns: db2RiskRatingsColumns, rowCount: 1500, size: '0.5 MB', lastUpdated: '2025-08-01T12:00:00Z', position: { x: 50, y: 1400 } },
+  { id: 'src-db2-claim-events', name: 'DB2_CLAIM_EVENTS', schema: 'INSURANCE', type: 'source', dialect: 'db2', columns: db2ClaimEventsColumns, rowCount: 250600, size: '45.1 MB', lastUpdated: '2025-08-05T11:15:00Z', position: { x: 50, y: 950 } },
+  { id: 'src-db2-policy-history', name: 'DB2_POLICY_HISTORY', schema: 'INSURANCE', type: 'source', dialect: 'db2', columns: db2PolicyHistoryColumns, rowCount: 98765, size: '18.9 MB', lastUpdated: '2025-08-05T09:35:00Z', position: { x: 50, y: 350 } },
+  { id: 'src-db2-agents', name: 'DB2_AGENTS', schema: 'INSURANCE', type: 'source', dialect: 'db2', columns: db2AgentsColumns, rowCount: 850, size: '0.3 MB', lastUpdated: '2025-07-29T14:00:00Z', position: { x: 50, y: 1100 } },
+  { id: 'src-db2-commissions', name: 'DB2_COMMISSIONS', schema: 'INSURANCE', type: 'source', dialect: 'db2', columns: db2CommissionsColumns, rowCount: 110234, size: '19.8 MB', lastUpdated: '2025-08-05T11:10:00Z', position: { x: 50, y: 1250 } },
 
   // BigQuery Target Tables
-  { id: 'tgt-bq-claims', name: 'claims_denorm', schema: 'project.dataset', type: 'target', dialect: 'bigquery', columns: bqClaimsDenormColumns, rowCount: 0, size: '0 MB', lastUpdated: undefined },
-  { id: 'tgt-bq-customers', name: 'customers_denorm', schema: 'project.dataset', type: 'target', dialect: 'bigquery', columns: bqCustomersDenormColumns, rowCount: 0, size: '0 MB', lastUpdated: undefined },
-  { id: 'tgt-bq-policies', name: 'policies_denorm', schema: 'project.dataset', type: 'target', dialect: 'bigquery', columns: bqPoliciesDenormColumns, rowCount: 0, size: '0 MB', lastUpdated: undefined },
-  { id: 'tgt-bq-risk-ratings', name: 'risk_ratings_denorm', schema: 'project.dataset', type: 'target', dialect: 'bigquery', columns: bqRiskRatingsDenormColumns, rowCount: 0, size: '0 MB', lastUpdated: undefined },
-  { id: 'tgt-bq-agents', name: 'agents_denorm', schema: 'project.dataset', type: 'target', dialect: 'bigquery', columns: bqAgentsDenormColumns, rowCount: 0, size: '0 MB', lastUpdated: undefined },
+  { id: 'tgt-bq-claims', name: 'claims_denorm', schema: 'project.dataset', type: 'target', dialect: 'bigquery', columns: bqClaimsDenormColumns, rowCount: 0, size: '0 MB', lastUpdated: undefined, position: { x: 800, y: 725 } },
+  { id: 'tgt-bq-customers', name: 'customers_denorm', schema: 'project.dataset', type: 'target', dialect: 'bigquery', columns: bqCustomersDenormColumns, rowCount: 0, size: '0 MB', lastUpdated: undefined, position: { x: 800, y: 50 } },
+  { id: 'tgt-bq-policies', name: 'policies_denorm', schema: 'project.dataset', type: 'target', dialect: 'bigquery', columns: bqPoliciesDenormColumns, rowCount: 0, size: '0 MB', lastUpdated: undefined, position: { x: 800, y: 275 } },
+  { id: 'tgt-bq-risk-ratings', name: 'risk_ratings_denorm', schema: 'project.dataset', type: 'target', dialect: 'bigquery', columns: bqRiskRatingsDenormColumns, rowCount: 0, size: '0 MB', lastUpdated: undefined, position: { x: 800, y: 1400 } },
+  { id: 'tgt-bq-agents', name: 'agents_denorm', schema: 'project.dataset', type: 'target', dialect: 'bigquery', columns: bqAgentsDenormColumns, rowCount: 0, size: '0 MB', lastUpdated: undefined, position: { x: 800, y: 1175 } },
 ];
 
 export const mockRelationships: Relationship[] = [
@@ -259,26 +259,52 @@ export const mockRelationships: Relationship[] = [
   { id: 'rel-9', sourceTable: 'DB2_COMMISSIONS', sourceColumn: 'CLM_ID', targetTable: 'DB2_CLAIMS', targetColumn: 'CLM_ID', relationshipType: 'one-to-many', confidence: 0.99 },
 ];
 
-export const mockLineageGraph: LineageGraph = {
-  tables: mockTables,
-  relationships: mockRelationships,
-  statistics: {
-    totalTables: mockTables.length,
-    totalColumns: mockTables.reduce((sum, table) => sum + table.columns.length, 0),
-    totalRelationships: mockRelationships.length,
-    complexityScore: 8.9 
-  }
-};
+// =================================================================================
+// SOURCE TO SOURCE MAPPING DATA
+// =================================================================================
+export const mockSourceToSourceMappings: SourceToSourceMappingLine[] = [
+  { id: 's2s-map-1', sourceTable: 'DB2_CLAIMS', targetTable: 'DB2_CLAIM_EVENTS', confidence: 0.85, description: 'Claims to Claim Events' },
+  { id: 's2s-map-2', sourceTable: 'DB2_POLICIES', targetTable: 'DB2_POLICY_HISTORY', confidence: 0.90, description: 'Policies to Policy History' },
+  { id: 's2s-map-3', sourceTable: 'DB2_AGENTS', targetTable: 'DB2_COMMISSIONS', confidence: 0.75, description: 'Agents to Commissions' },
+];
 
-// Discovery processing steps
-export const discoverySteps = [
-  { step: 'Analyzing schema files...', duration: 1000 },
-  { step: 'Extracting table definitions...', duration: 1500 },
-  { step: 'Identifying column relationships...', duration: 2000 },
-  { step: 'Calculating data lineage...', duration: 1800 },
-  { step: 'Generating metadata catalog...', duration: 1200 },
-  { step: 'Building lineage graph...', duration: 800 },
-  { step: 'Discovery complete!', duration: 500 }
+export const mockPrimaryKeyForeignkeyMappingsAsSourceToSource: SourceToSourceMappingLine[] = [
+  {
+    id: 'pk-fk-s2s-1',
+    sourceTable: 'DB2_CUSTOMERS',
+    targetTable: 'DB2_CLAIMS',
+    confidence: 0.95,
+    description: 'PK/FK: DB2_CUSTOMERS.CUST_ID -> DB2_CLAIMS.CUSTOMER_REF',
+  },
+  {
+    id: 'pk-fk-s2s-2',
+    sourceTable: 'DB2_POLICIES',
+    targetTable: 'DB2_CLAIMS',
+    confidence: 0.95,
+    description: 'PK/FK: DB2_POLICIES.POLICY_ID -> DB2_CLAIMS.POLICY_REF',
+  },
+  {
+    id: 'pk-fk-s2s-3',
+    sourceTable: 'DB2_AGENTS',
+    targetTable: 'DB2_POLICIES',
+    confidence: 0.90,
+    description: 'PK/FK: DB2_AGENTS.AGENT_ID -> DB2_POLICIES.AGENT_ID',
+  },
+];
+
+// =================================================================================
+// KEY MAPPING DATA
+// =================================================================================
+export const mockKeyMappings: KeyMappingLine[] = [
+  { id: 'key-map-1', sourceTable: 'DB2_CLAIMS', sourceColumn: 'CLM_ID', targetTable: 'claims_denorm', targetColumn: 'claim_identifier', confidence: 0.98 },
+  { id: 'key-map-2', sourceTable: 'DB2_CUSTOMERS', sourceColumn: 'CUST_ID', targetTable: 'customers_denorm', targetColumn: 'customer_id', confidence: 0.98 },
+  { id: 'key-map-3', sourceTable: 'DB2_POLICIES', sourceColumn: 'POLICY_ID', targetTable: 'policies_denorm', targetColumn: 'policy_key', confidence: 0.98 },
+  { id: 'key-map-4', sourceTable: 'DB2_AGENTS', sourceColumn: 'AGENT_ID', targetTable: 'agents_denorm', targetColumn: 'agent_key', confidence: 0.98 },
+  { id: 'key-map-5', sourceTable: 'DB2_RISK_RATINGS', sourceColumn: 'RATING_KEY', targetTable: 'risk_ratings_denorm', targetColumn: 'rating_id', confidence: 0.98 },
+  { id: 'key-map-6', sourceTable: 'DB2_PAYMENTS', sourceColumn: 'CLM_ID', targetTable: 'claims_denorm', targetColumn: 'claim_identifier', confidence: 0.90 },
+  { id: 'key-map-7', sourceTable: 'DB2_ADJUSTMENTS', sourceColumn: 'CLM_ID', targetTable: 'claims_denorm', targetColumn: 'claim_identifier', confidence: 0.90 },
+  { id: 'key-map-8', sourceTable: 'DB2_CLAIM_EVENTS', sourceColumn: 'CLM_ID', targetTable: 'claims_denorm', targetColumn: 'claim_identifier', confidence: 0.90 },
+  { id: 'key-map-9', sourceTable: 'DB2_COMMISSIONS', sourceColumn: 'AGENT_ID', targetTable: 'agents_denorm', targetColumn: 'agent_key', confidence: 0.90 },
 ];
 
 // =================================================================================
@@ -295,15 +321,15 @@ export const dfdMappingData = {
     { id: 'DB2_ADJUSTMENTS', name: 'DB2_ADJUSTMENTS', type: 'source', schema: 'INSURANCE', dialect: 'db2', position: { x: 50, y: 800 } },
     { id: 'DB2_CLAIM_EVENTS', name: 'DB2_CLAIM_EVENTS', type: 'source', schema: 'INSURANCE', dialect: 'db2', position: { x: 50, y: 950 } },
     { id: 'DB2_AGENTS', name: 'DB2_AGENTS', type: 'source', schema: 'INSURANCE', dialect: 'db2', position: { x: 50, y: 1100 } },
-    { id: 'DB2_COMMISSIONS', name: 'DB2_COMMISSIONS', type: 'source', schema: 'INSURANCE', dialect: 'db2', position: { x: 50, y: 1250 } },
-    { id: 'DB2_RISK_RATINGS', name: 'DB2_RISK_RATINGS', type: 'source', schema: 'INSURANCE', dialect: 'db2', position: { x: 50, y: 1400 } },
+    { id: 'DB2_COMMISSIONS', name: 'DB2_COMMISSIONS', type: 'source', dialect: 'db2', position: { x: 50, y: 1250 } },
+    { id: 'DB2_RISK_RATINGS', name: 'DB2_RISK_RATINGS', type: 'source', dialect: 'db2', position: { x: 50, y: 1400 } },
 
     // Target BigQuery Tables
     { id: 'customers_denorm', name: 'customers_denorm', type: 'target', schema: 'project.dataset', dialect: 'bigquery', position: { x: 800, y: 50 } },
     { id: 'policies_denorm', name: 'policies_denorm', type: 'target', schema: 'project.dataset', dialect: 'bigquery', position: { x: 800, y: 275 } },
     { id: 'claims_denorm', name: 'claims_denorm', type: 'target', schema: 'project.dataset', dialect: 'bigquery', position: { x: 800, y: 725 } },
-    { id: 'agents_denorm', name: 'agents_denorm', type: 'target', schema: 'project.dataset', dialect: 'bigquery', position: { x: 800, y: 1175 } },
-    { id: 'risk_ratings_denorm', name: 'risk_ratings_denorm', type: 'target', schema: 'project.dataset', dialect: 'bigquery', position: { x: 800, y: 1400 } },
+    { id: 'agents_denorm', name: 'agents_denorm', type: 'target', dialect: 'bigquery', position: { x: 800, y: 1175 } },
+    { id: 'risk_ratings_denorm', name: 'risk_ratings_denorm', type: 'target', dialect: 'bigquery', position: { x: 800, y: 1400 } },
   ],
   mappings: [
     // Customer Mappings
@@ -323,3 +349,30 @@ export const dfdMappingData = {
     { id: 'dfd-map-10', sourceTable: 'DB2_RISK_RATINGS', targetTable: 'risk_ratings_denorm', confidence: 0.95, path: [{ x: 250, y: 1450 }, { x: 800, y: 1450 }] },
   ]
 };
+
+export const mockLineageGraph: LineageGraph = {
+  tables: mockTables,
+  relationships: mockRelationships,
+  mappings: dfdMappingData.mappings,
+  keyMappings: mockKeyMappings,
+  sourceToSourceMappings: [...mockSourceToSourceMappings, ...mockPrimaryKeyForeignkeyMappingsAsSourceToSource], // Add the new source-to-source mappings
+  statistics: {
+    totalTables: mockTables.length,
+    totalColumns: mockTables.reduce((sum, table) => sum + table.columns.length, 0),
+    totalRelationships: mockRelationships.length,
+    totalMappings: dfdMappingData.mappings.length,
+    complexityScore: 8.9
+  }
+};
+
+// Discovery processing steps
+export const discoverySteps = [
+  { step: 'Analyzing schema files...', duration: 1000 },
+  { step: 'Extracting table definitions...', duration: 1500 },
+  { step: 'Identifying column relationships...', duration: 2000 },
+  { step: 'Calculating data lineage...', duration: 1800 },
+  { step: 'Generating metadata catalog...', duration: 1200 },
+  { step: 'Building lineage graph...', duration: 800 },
+  { step: 'Discovery complete!', duration: 500 }
+];
+
