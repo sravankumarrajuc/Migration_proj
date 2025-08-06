@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import {
   ReactFlow,
   Node,
@@ -28,11 +28,14 @@ interface LineageGraphProps {
  // Custom Table Node Component
  function TableFlowNode({ data }: { data: TableNodeData }) {
    const { table, type } = data;
+   const [showAllColumns, setShowAllColumns] = useState(false); // State to manage column visibility
+   
+   const displayedColumns = showAllColumns ? table.columns : table.columns.slice(0, 4);
    
    return (
      <div className={`bg-card border rounded-lg shadow-lg min-w-[250px] ${
        type === 'source' ? 'border-blue-200' : 'border-green-200'
-     }`}>
+     }`} onClick={() => setShowAllColumns(!showAllColumns)}> {/* Add onClick to toggle */}
        {/* Source Handle */}
        <Handle type="source" position={Position.Right} className="w-3 h-3 bg-blue-500" />
 
@@ -65,8 +68,8 @@ interface LineageGraphProps {
        </div>
        
        {/* Key Columns Preview */}
-       <div className="px-4 py-3 space-y-1">
-         {table.columns.slice(0, 4).map((column) => (
+       <div className="px-4 py-3 space-y-1 cursor-pointer"> {/* Add cursor-pointer for visual cue */}
+         {displayedColumns.map((column) => (
            <div key={column.id} className="flex items-center gap-2 text-xs">
              <div className={`w-2 h-2 rounded-full ${
                column.isPrimaryKey ? 'bg-yellow-400' :
@@ -79,7 +82,7 @@ interface LineageGraphProps {
          ))}
          {table.columns.length > 4 && (
            <div className="text-xs text-muted-foreground pl-4">
-             +{table.columns.length - 4} more columns
+             {showAllColumns ? '- Show less' : `+${table.columns.length - 4} more columns`}
            </div>
          )}
        </div>
