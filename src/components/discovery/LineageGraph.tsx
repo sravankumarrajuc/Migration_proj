@@ -12,13 +12,14 @@ import {
   Position,
   MarkerType,
   Handle,
-  applyNodeChanges, // Import applyNodeChanges
-  NodeChange,       // Import NodeChange
+  applyNodeChanges,
+  NodeChange,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { LineageGraph as LineageGraphType, TableNode, Relationship, TableNodeData } from '@/types/migration'; // Import TableNodeData
+import { LineageGraph as LineageGraphType, TableNode, Relationship, TableNodeData } from '@/types/migration';
 import { Badge } from '@/components/ui/badge';
 import { Database } from 'lucide-react';
+import dagre from 'dagre';
 
 interface LineageGraphProps {
   lineageGraph: LineageGraphType;
@@ -94,27 +95,58 @@ const nodeTypes = {
   tableNode: TableFlowNode,
 };
 
-export function LineageGraph({ lineageGraph, onNodesPositionsChange }: LineageGraphProps) { // Destructure onNodesPositionsChange
-  const initialNodes: Node<TableNodeData>[] = useMemo(() => {
-    return lineageGraph.tables.map(table => ({
+
+export function LineageGraph({ lineageGraph, onNodesPositionsChange }: LineageGraphProps) {
+  const dagreGraph = useMemo(() => {
+    const graph = new dagre.graphlib.Graph();
+    graph.setDefaultEdgeLabel(() => ({}));
+    return graph;
+  }, []);
+
+  const nodeWidth = 250; // Approximate width of your TableFlowNode
+  const nodeHeight = 150; // Approximate height of your TableFlowNode, adjust as needed
+
+  const getLayoutedElements = useCallback((nodes: Node<TableNodeData>[], edges: Edge[], direction = 'LR') => {
+    dagreGraph.setGraph({ rankdir: direction });
+
+    nodes.forEach((node) => {
+      dagreGraph.setNode(node.id, { width: nodeWidth, height: nodeHeight });
+    });
+
+    edges.forEach((edge) => {
+      dagreGraph.setEdge(edge.source, edge.target);
+    });
+
+    dagre.layout(dagreGraph);
+
+    return nodes.map((node) => {
+      const nodeWithPosition = dagreGraph.node(node.id);
+      node.position = {
+        x: nodeWithPosition.x - nodeWidth / 2,
+        y: nodeWithPosition.y - nodeHeight / 2,
+      };
+      return node;
+    });
+  }, [dagreGraph]); // Add dagreGraph to dependencies
+
+  const { layoutedNodes, layoutedEdges } = useMemo(() => {
+    const initialNodes: Node<TableNodeData>[] = lineageGraph.tables.map(table => ({
       id: table.id,
       type: 'tableNode',
-      position: table.position || { x: 0, y: 0 }, // Use position from data, or default
+      position: { x: 0, y: 0 }, // Initial dummy position, will be overwritten by layout
       data: {
         table,
         label: table.name,
         type: table.type,
       },
     }));
-  }, [lineageGraph.tables]);
 
-  const initialEdges: Edge[] = useMemo(() => {
-    const relationshipEdges = lineageGraph.relationships.map((rel) => {
+    const initialEdges: Edge[] = lineageGraph.relationships.map((rel) => {
       const sourceTable = lineageGraph.tables.find(t => t.name === rel.sourceTable);
       const targetTable = lineageGraph.tables.find(t => t.name === rel.targetTable);
 
       if (!sourceTable || !targetTable) {
-        return null; // Skip if tables are not found
+        return null;
       }
 
       const isSourceToTarget = sourceTable.type === 'source' && targetTable.type === 'target';
@@ -123,30 +155,26 @@ export function LineageGraph({ lineageGraph, onNodesPositionsChange }: LineageGr
       let markerColor = '';
       let animated = true;
 
-      // Only render source-to-target relationships here. Source-to-source will be handled by sourceToSourceMappingEdges.
       if (isSourceToTarget) {
-        edgeStyle = { strokeDasharray: '5 5', stroke: '#22c55e', strokeWidth: 2 }; // Dotted green line
+        edgeStyle = { strokeDasharray: '5 5', stroke: '#22c55e', strokeWidth: 2 };
         markerColor = '#22c55e';
       } else {
-        // Default or other relationship types (if any)
         edgeStyle = { stroke: '#999', strokeWidth: 1 };
         markerColor = '#999';
         animated = false;
       }
 
-      // If it's a source-to-source relationship, skip it here as it will be handled by sourceToSourceMappingEdges
       if (sourceTable.type === 'source' && targetTable.type === 'source') {
         return null;
       }
 
-      // Determine label based on relationship type
       let label = '';
       if (rel.relationshipType === 'one-to-one') {
         label = '1:1';
       } else if (rel.relationshipType === 'one-to-many') {
         label = '1:M';
       } else {
-        label = `${Math.round(rel.confidence * 100)}%`; // Fallback to confidence if type is unknown
+        label = `${Math.round(rel.confidence * 100)}%`;
       }
 
       return {
@@ -170,23 +198,23 @@ export function LineageGraph({ lineageGraph, onNodesPositionsChange }: LineageGr
           fillOpacity: 0.9,
         },
       };
-    }).filter(Boolean) as Edge[]; // Filter out nulls
+    }).filter(Boolean) as Edge[];
 
     const mappingEdges = lineageGraph.mappings.map((mapping) => {
       const sourceTable = lineageGraph.tables.find(t => t.name === mapping.sourceTable);
       const targetTable = lineageGraph.tables.find(t => t.name === mapping.targetTable);
 
       if (!sourceTable || !targetTable) {
-        return null; // Skip if tables are not found
+        return null;
       }
 
       return {
         id: mapping.id,
         source: sourceTable.id,
         target: targetTable.id,
-        type: 'smoothstep', // Using smoothstep for now, can be 'bezier' or 'step'
+        type: 'smoothstep',
         animated: true,
-        style: { strokeWidth: 2, stroke: '#f97316' }, // Orange for mappings
+        style: { strokeWidth: 2, stroke: '#f97316' },
         markerEnd: {
           type: MarkerType.ArrowClosed,
           color: '#f97316',
@@ -208,7 +236,7 @@ export function LineageGraph({ lineageGraph, onNodesPositionsChange }: LineageGr
       const targetTable = lineageGraph.tables.find(t => t.name === keyMapping.targetTable);
 
       if (!sourceTable || !targetTable) {
-        return null; // Skip if tables are not found
+        return null;
       }
 
       return {
@@ -217,7 +245,7 @@ export function LineageGraph({ lineageGraph, onNodesPositionsChange }: LineageGr
         target: targetTable.id,
         type: 'smoothstep',
         animated: true,
-        style: { strokeWidth: 4, stroke: '#8b5cf6' }, // Thick purple for key mappings
+        style: { strokeWidth: 4, stroke: '#8b5cf6' },
         markerEnd: {
           type: MarkerType.ArrowClosed,
           color: '#8b5cf6',
@@ -239,7 +267,7 @@ export function LineageGraph({ lineageGraph, onNodesPositionsChange }: LineageGr
       const targetTable = lineageGraph.tables.find(t => t.name === s2sMapping.targetTable);
 
       if (!sourceTable || !targetTable) {
-        return null; // Skip if tables are not found
+        return null;
       }
 
       return {
@@ -248,7 +276,7 @@ export function LineageGraph({ lineageGraph, onNodesPositionsChange }: LineageGr
         target: targetTable.id,
         type: 'smoothstep',
         animated: true,
-        style: { strokeWidth: 2, stroke: '#ef4444', strokeDasharray: '8 4' }, // Dashed red line for source-to-source mappings
+        style: { strokeWidth: 2, stroke: '#ef4444', strokeDasharray: '8 4' },
         markerEnd: {
           type: MarkerType.ArrowClosed,
           color: '#ef4444',
@@ -265,20 +293,25 @@ export function LineageGraph({ lineageGraph, onNodesPositionsChange }: LineageGr
       };
     }).filter(Boolean) as Edge[];
 
-    return [...relationshipEdges, ...mappingEdges, ...keyMappingEdges, ...sourceToSourceMappingEdges];
-  }, [lineageGraph.relationships, lineageGraph.tables, lineageGraph.mappings, lineageGraph.keyMappings, lineageGraph.sourceToSourceMappings]);
+    const allEdges = [...initialEdges, ...mappingEdges, ...keyMappingEdges, ...sourceToSourceMappingEdges];
+    const layoutedNodes = getLayoutedElements(initialNodes, allEdges);
 
-  const [nodes, setNodes] = useNodesState(initialNodes);
-  const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+    return { layoutedNodes, layoutedEdges: allEdges };
+  }, [lineageGraph.tables, lineageGraph.relationships, lineageGraph.mappings, lineageGraph.keyMappings, lineageGraph.sourceToSourceMappings]);
 
-  const onNodesChange = useCallback(
+
+  const [nodes, setNodes, onNodesChange] = useNodesState(layoutedNodes);
+  const [edges, setEdges, onEdgesChange] = useEdgesState(layoutedEdges);
+
+  const onNodesChangeCallback = useCallback(
     (changes: NodeChange[]) => {
-      setNodes((nds) => applyNodeChanges(changes, nds) as Node<TableNodeData>[]);
-      // Extract positions from changes and call the prop callback
-      const updatedNodes = applyNodeChanges(changes, nodes) as Node<TableNodeData>[]; // Cast to correct type
-      onNodesPositionsChange(updatedNodes);
+      setNodes((nds) => {
+        const updated = applyNodeChanges(changes, nds) as Node<TableNodeData>[];
+        onNodesPositionsChange(updated); // Call the prop callback with updated nodes
+        return updated;
+      });
     },
-    [setNodes, nodes, onNodesPositionsChange]
+    [setNodes, onNodesPositionsChange]
   );
 
   const onConnect = useCallback(
@@ -291,7 +324,7 @@ export function LineageGraph({ lineageGraph, onNodesPositionsChange }: LineageGr
       <ReactFlow
         nodes={nodes}
         edges={edges}
-        onNodesChange={onNodesChange}
+        onNodesChange={onNodesChangeCallback} // Use the new callback name
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
         nodeTypes={nodeTypes}

@@ -1,5 +1,6 @@
-import { Building, ChevronDown, User, Settings, LogOut } from 'lucide-react';
+import { Building, ChevronDown, User, Settings, LogOut, Clock, CheckCircle, AlertCircle, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -9,13 +10,18 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useMigrationStore } from '@/store/migrationStore';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { googleLogout, useGoogleLogin } from '@react-oauth/google';
+import { getStatusColor } from '@/data/mockProjects';
+import { Project } from '@/types/migration';
 
 export function Header() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { currentProject, userProfile, clearUserProfile, setUserProfile } = useMigrationStore();
   
+  const showProjectDetails = currentProject && location.pathname !== '/projects';
+
   const handleSignOut = () => {
     // Sign out from Google
     googleLogout();
@@ -100,12 +106,16 @@ export function Header() {
             </span>
           </div>
           
-          {currentProject && (
+          {showProjectDetails && (
             <>
               <div className="h-6 w-px bg-border" />
               <div className="flex items-center space-x-2 text-sm text-muted-foreground">
                 <span>Project:</span>
                 <span className="font-medium text-foreground">{currentProject.name}</span>
+                <Badge className={getStatusColor(currentProject.status)}>
+                  {getStatusIcon(currentProject.status)}
+                  <span className="ml-1 capitalize">{currentProject.status}</span>
+                </Badge>
               </div>
             </>
           )}
@@ -151,3 +161,16 @@ export function Header() {
     </header>
   );
 }
+
+const getStatusIcon = (status: Project['status']) => {
+  switch (status) {
+    case 'completed':
+      return <CheckCircle className="h-4 w-4" />;
+    case 'in-progress':
+      return <Clock className="h-4 w-4" />;
+    case 'failed':
+      return <AlertCircle className="h-4 w-4" />;
+    default:
+      return <FileText className="h-4 w-4" />;
+  }
+};
