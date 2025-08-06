@@ -31,14 +31,14 @@ export function AISuggestionsPanel({ onClose, filterConfidence = 0 }: AISuggesti
 
   const getSourceColumn = (sourceTableId: string, sourceColumnId: string) => {
     if (!discoveryState.lineageGraph) return null;
-    const table = discoveryState.lineageGraph.tables.find(t => t.id === sourceTableId);
-    return table?.columns.find(c => c.id === sourceColumnId) || null;
+    const table = discoveryState.lineageGraph.tables.find(t => t.name === sourceTableId);
+    return table?.columns.find(c => c.name === sourceColumnId) || null;
   };
 
   const getTargetColumn = (targetTableId: string, targetColumnId: string) => {
     if (!discoveryState.lineageGraph) return null;
-    const table = discoveryState.lineageGraph.tables.find(t => t.id === targetTableId);
-    return table?.columns.find(c => c.id === targetColumnId) || null;
+    const table = discoveryState.lineageGraph.tables.find(t => t.name === targetTableId);
+    return table?.columns.find(c => c.name === targetColumnId) || null;
   };
 
   const handleAccept = (mappingId: string) => {
