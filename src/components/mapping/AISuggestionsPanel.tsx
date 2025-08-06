@@ -79,8 +79,10 @@ export function AISuggestionsPanel({ onClose, filterConfidence = 0 }: AISuggesti
                 "border rounded-lg p-3 space-y-2 transition-colors",
                 isProcessed 
                   ? suggestion.status === 'approved'
-                    ? "border-green-200 bg-green-50" 
-                    : "border-gray-200 bg-gray-50"
+                    ? "border-green-200 bg-green-50"
+                    : suggestion.status === 'rejected'
+                      ? "border-red-200 bg-red-50"
+                      : "border-gray-200 bg-gray-50"
                   : "border-border hover:bg-muted/50"
               )}
             >
@@ -143,6 +145,14 @@ export function AISuggestionsPanel({ onClose, filterConfidence = 0 }: AISuggesti
                     <X className="h-3 w-3" />
                     Reject
                   </Button>
+                  {suggestion.status === 'rejected' && (
+                    <Button
+                      size="sm"
+                      onClick={() => updateFieldMapping(suggestion.id, { status: 'suggested' })}
+                    >
+                      Revert Reject
+                    </Button>
+                  )}
                 </div>
             </div>
           );

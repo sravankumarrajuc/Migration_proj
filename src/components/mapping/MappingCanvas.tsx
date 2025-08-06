@@ -21,7 +21,7 @@ export function MappingCanvas({ filterConfidence = 0 }: MappingCanvasProps) {
     if (!mappingState.currentTableMapping) return [];
     
     const allFieldMappings = mappingState.currentTableMapping.fieldMappings.filter(fm =>
-      fm.status === 'approved' || fm.status === 'suggested'
+      fm.status === 'approved' || fm.status === 'suggested' || fm.status === 'rejected'
     );
 
     if (filterConfidence > 0) {
@@ -114,9 +114,11 @@ export function MappingCanvas({ filterConfidence = 0 }: MappingCanvasProps) {
                     key={mapping.id}
                     className={cn(
                       "border rounded-lg p-4 space-y-3 transition-colors",
-                      mapping.status === 'approved' 
-                        ? "border-green-200 bg-green-50" 
-                        : "border-border hover:bg-muted/50"
+                      mapping.status === 'approved'
+                        ? "border-green-200 bg-green-50"
+                        : mapping.status === 'rejected'
+                          ? "border-red-200 bg-red-50"
+                          : "border-border hover:bg-muted/50"
                     )}
                   >
                     {/* Mapping Header */}
@@ -132,6 +134,11 @@ export function MappingCanvas({ filterConfidence = 0 }: MappingCanvasProps) {
                         {mapping.status === 'approved' && (
                           <Badge variant="default" className="bg-green-600">
                             Approved
+                          </Badge>
+                        )}
+                        {mapping.status === 'rejected' && (
+                          <Badge variant="default" className="bg-red-600">
+                            Rejected
                           </Badge>
                         )}
                       </div>
@@ -155,6 +162,14 @@ export function MappingCanvas({ filterConfidence = 0 }: MappingCanvasProps) {
                               Reject
                             </Button>
                           </>
+                        )}
+                        {mapping.status === 'rejected' && (
+                          <Button
+                            size="sm"
+                            onClick={() => updateFieldMapping(mapping.id, { status: 'suggested' })}
+                          >
+                            Revert Reject
+                          </Button>
                         )}
                         <Button
                           size="sm"
