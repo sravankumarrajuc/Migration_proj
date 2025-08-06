@@ -6,69 +6,153 @@ const bigQuerySQL = `-- Generated BigQuery SQL for Data Migration
 -- Target: BigQuery dim_customer, fact_order tables
 -- Generated: ${new Date().toISOString()}
 
--- Customer Dimension Migration
-CREATE OR REPLACE TABLE \`project.dataset.dim_customer\` AS
-SELECT 
-  -- Direct mapping: customer_id -> customer_id
-  CAST(c.customer_id AS STRING) AS customer_id,
-  
-  -- Composite mapping: first_name + last_name -> full_name
-  CONCAT(c.first_name, ' ', c.last_name) AS full_name,
-  
-  -- Direct mapping with validation: email -> email
-  CASE 
-    WHEN c.email IS NOT NULL AND REGEXP_CONTAINS(c.email, r'^[\\w\\.-]+@[\\w\\.-]+\\.[a-zA-Z]{2,}$')
-    THEN c.email
-    ELSE 'invalid@domain.com'
-  END AS email,
-  
-  -- Type conversion: phone_number -> phone (VARCHAR to STRING)
-  CAST(c.phone_number AS STRING) AS phone,
-  
-  -- Date conversion: created_at -> created_date
-  DATE(c.created_at) AS created_date,
-  
-  -- Transformation: status -> customer_status (with default)
-  COALESCE(c.status, 'unknown') AS customer_status,
-  
-  -- Generated metadata
-  CURRENT_TIMESTAMP() AS etl_created_at,
-  'migration_v1' AS etl_source_version
-FROM \`source_project.source_dataset.customers\` c
-WHERE c.customer_id IS NOT NULL;
-
--- Order Fact Migration  
-CREATE OR REPLACE TABLE \`project.dataset.fact_order\` AS
+-- 1) Customer Dimension
+CREATE OR REPLACE TABLE analytics.customers_denorm AS
 SELECT
-  -- Direct mapping: order_id -> order_id
-  CAST(o.order_id AS STRING) AS order_id,
-  
-  -- Foreign key mapping: customer_id -> customer_id
-  CAST(o.customer_id AS STRING) AS customer_id,
-  
-  -- Type conversion: order_date -> order_date (TIMESTAMP to DATE)
-  DATE(o.order_date) AS order_date,
-  
-  -- Computed field: order_date -> date_key (YYYYMMDD format)
-  CAST(FORMAT_DATE('%Y%m%d', DATE(o.order_date)) AS INT64) AS date_key,
-  
-  -- Type conversion: total_amount -> total_amount (DECIMAL to NUMERIC)
-  CAST(o.total_amount AS NUMERIC) AS total_amount,
-  
-  -- Transformation: status -> order_status with case normalization
-  CASE 
-    WHEN UPPER(o.status) = 'PENDING' THEN 'pending'
-    WHEN UPPER(o.status) = 'COMPLETED' THEN 'completed'
-    WHEN UPPER(o.status) = 'CANCELLED' THEN 'cancelled'
-    ELSE 'unknown'
-  END AS order_status,
-  
-  -- Generated metadata
-  CURRENT_TIMESTAMP() AS etl_created_at,
-  'migration_v1' AS etl_source_version
-FROM \`source_project.source_dataset.orders\` o
-WHERE o.order_id IS NOT NULL
-  AND o.customer_id IS NOT NULL;`;
+  CAST(c.CUST_ID      AS INT64)       AS customer_id,           -- Name-Similarity
+  JSON_VALUE(c.NAME_JSON, '$.firstName') AS name_first,         -- Multi-Column Parse
+  JSON_VALUE(c.NAME_JSON, '$.lastName')  AS name_last,          -- Multi-Column Parse
+  c.REGION_CD                        AS region_code,            -- Name-Similarity
+  c.SEGMENT                          AS customer_segment,       -- Name-Similarity
+  CAST(c.DOB AS DATE)               AS date_of_birth,           -- Name-Similarity
+  c.EMAIL                            AS email_address,          -- Name-Similarity
+  c.PHONE                            AS phone_number,           -- Name-Similarity
+  JSON_VALUE(c.ADDR_JSON, '$.street')   AS address_street,      -- Fuzzy-Suggestion
+  JSON_VALUE(c.ADDR_JSON, '$.city')     AS address_city,        -- Fuzzy-Suggestion
+  JSON_VALUE(c.ADDR_JSON, '$.state')    AS address_state,       -- Fuzzy-Suggestion
+  JSON_VALUE(c.ADDR_JSON, '$.postcode') AS address_postcode,    -- Fuzzy-Suggestion
+  c.JOIN_DT                          AS joined_on,               -- Name-Similarity
+  c.STATUS                           AS status,                  -- Name-Similarity
+  c.PREF_CHANNEL                     AS preferred_contact,       -- Name-Similarity
+  CAST(c.RISK_SCORE AS NUMERIC)      AS risk_score               -- Name-Similarity
+FROM project.dataset.stage_db2_customers AS c;
+
+
+-- 2) Policy Dimension
+CREATE OR REPLACE TABLE analytics.policies_denorm AS
+SELECT
+  CAST(p.POLICY_ID AS INT64)            AS policy_key,       -- Name-Similarity
+  p.EFF_DT                              AS effective_on,     -- Name-Similarity
+  p.EXP_DT                              AS expires_on,       -- Name-Similarity
+  p.POLICY_JSON                         AS policy_document,  -- Name-Similarity
+  p.PREMIUM_AMT                         AS total_premium,    -- Name-Similarity
+  p.POL_TYPE                            AS product_type,     -- Name-Similarity
+  JSON_VALUE(p.COVERAGES_JSON, '$.type')  AS coverage_type,  -- Fuzzy-Suggestion
+  JSON_VALUE(p.COVERAGES_JSON, '$.limit') AS coverage_limit, -- Fuzzy-Suggestion
+  p.STATUS                              AS policy_status,    -- Fuzzy-Suggestion
+  p.RIDER_CNT                           AS rider_count,      -- Name-Similarity
+  p.RENEWAL_DT                          AS next_renewal,     -- Name-Similarity
+  ARRAY_AGG(
+    STRUCT(
+      h.HIST_SEQ     AS revision_number,
+      h.CHANGE_DT    AS changed_on,
+      h.FIELD_NAME   AS field_changed,
+      h.OLD_VALUE    AS old_value_text,
+      h.NEW_VALUE    AS new_value_text
+    )
+    ORDER BY h.CHANGE_DT
+  ) AS history                                    -- Fuzzy-Nest-Array
+FROM project.dataset.stage_db2_policies         AS p
+LEFT JOIN project.dataset.stage_db2_policy_history AS h
+  ON h.POLICY_ID = p.POLICY_ID
+GROUP BY p.POLICY_ID, p.EFF_DT, p.EXP_DT, p.POLICY_JSON,
+         p.PREMIUM_AMT, p.POL_TYPE, p.COVERAGES_JSON,
+         p.STATUS, p.RIDER_CNT, p.RENEWAL_DT;
+
+
+-- 3) Claim Fact (denormalized)
+CREATE OR REPLACE TABLE analytics.claims_denorm AS
+SELECT
+  CAST(c.CLM_ID   AS INT64)   AS claim_identifier,
+  CAST(c.POLICY_REF   AS INT64) AS policy_code,
+  CAST(c.CUSTOMER_REF AS INT64) AS client_key,
+  c.CLM_DT              AS claim_open_date,
+  c.CLM_STATUS          AS status_code,
+  c.CLM_AMT             AS claim_amount,
+  c.ADJ_AMT             AS total_adjustment_amount,
+  c.SETTLE_DT           AS settlement_date,
+  c.CLAIM_JSON          AS claim_details,
+  c.LOSS_TYPE           AS loss_category,
+  c.REPORTED_BY         AS reported_by,
+  c.INCIDENT_LOC        AS incident_location,
+  c.INCIDENT_DT         AS incident_date,
+  c.DAYS_OPEN           AS days_to_resolution,
+
+  -- payments[]
+  ARRAY(
+    SELECT AS STRUCT
+      CAST(pay.PAY_ID AS INT64)       AS payment_key,
+      pay.PAY_DT                      AS payment_date,
+      pay.AMT_PAID                    AS amount_paid,
+      pay.PAYMENT_TYPE                AS method_used,
+      pay.PAYMENT_STATUS              AS status
+    FROM project.dataset.stage_db2_payments AS pay
+    WHERE pay.CLM_ID = c.CLM_ID
+  ) AS payments,
+
+  -- adjustments[]
+  ARRAY(
+    SELECT AS STRUCT
+      CAST(adj.ADJ_ID AS INT64)              AS adjustment_key,
+      adj.ADJ_DT                             AS adjustment_date,
+      adj.ADJ_AMT_SRC                        AS original_amount,
+      adj.REASON_CD                          AS reason_code,
+      adj.COMMENTS                           AS comments_text,
+      adj.ADJ_JSON                           AS adjustment_meta
+    FROM project.dataset.stage_db2_adjustments AS adj
+    WHERE adj.CLM_ID = c.CLM_ID
+  ) AS adjustments,
+
+  -- events[]
+  ARRAY(
+    SELECT AS STRUCT
+      ev.EVENT_SEQ                   AS sequence_number,
+      ev.EVENT_DT                    AS occurred_on,
+      ev.EVENT_TYPE                  AS event_type,
+      ev.EVENT_DETAILS               AS event_details,
+      ev.DETAILS_JSON                AS event_metadata,
+      ev.USER_ID                     AS user_identifier
+    FROM project.dataset.stage_db2_claim_events AS ev
+    WHERE ev.CLM_ID = c.CLM_ID
+  ) AS events
+
+FROM project.dataset.stage_db2_claims AS c;
+
+
+-- 4) Risk Ratings
+CREATE OR REPLACE TABLE analytics.risk_ratings_denorm AS
+SELECT
+  CAST(r.RATING_KEY AS INT64)    AS rating_key,
+  r.ZIP                          AS zip_code,
+  r.POL_TYPE                     AS policy_type,
+  r.RATING_JSON                  AS rating_details,
+  r.SCORE                        AS score,
+  r.EFFECTIVE_DT                 AS effective_date,
+  r.EXPIRATION_DT                AS expiration_date
+FROM project.dataset.stage_db2_risk_ratings AS r;
+
+
+-- 5) Agent Dimension with commissions[]
+CREATE OR REPLACE TABLE analytics.agents_denorm AS
+SELECT
+  CAST(a.AGENT_ID AS INT64)     AS agent_key,
+  a.FIRST_NAME                  AS first_name,
+  a.LAST_NAME                   AS last_name,
+  a.REGION                      AS region,
+  a.STATUS                      AS status,
+  a.AGENT_JSON                  AS agent_meta,
+
+  ARRAY(
+    SELECT AS STRUCT
+      c.COMM_ID                AS commission_key,
+      c.COMM_DT                AS commission_date,
+      c.COMM_AMT               AS commission_amount
+    FROM project.dataset.stage_db2_commissions AS c
+    WHERE c.AGENT_ID = a.AGENT_ID
+  ) AS commissions
+
+FROM project.dataset.stage_db2_agents AS a;
+`;
 
 // Databricks SQL Template
 const databricksSQL = `-- Generated Databricks SQL for Data Migration
@@ -185,7 +269,7 @@ class CustomerTransform(beam.DoFn):
             
             # Direct mapping with validation: email -> email
             email = element.get('email', '')
-            email_pattern = r'^[\\w\\.-]+@[\\w\\.-]+\\.[a-zA-Z]{2,}$'
+            email_pattern = r'^[\\\\w\\\\.-]+@[\\\\w\\\\.-]+\\\\.[a-zA-Z]{2,}$'
             if not email or not re.match(email_pattern, email):
                 email = 'invalid@domain.com'
             
@@ -469,46 +553,55 @@ export const mockCodeOptimizations: CodeOptimization[] = [
     id: 'opt-1',
     type: 'performance',
     title: 'Add clustering keys for BigQuery',
-    description: 'Cluster fact_order table by customer_id for improved query performance',
-    suggestion: 'Add CLUSTER BY customer_id to CREATE TABLE statement',
+    description: 'Cluster claims_denorm and fact_order tables by their most-frequently filtered keys (e.g. client_key, order_date_key) to reduce query scan costs.',
+    suggestion: 'Add CLUSTER BY client_key, order_date_key to your CREATE TABLE statements.',
     impact: 'high',
     autoApplicable: true
   },
   {
-    id: 'opt-2', 
+    id: 'opt-2',
     type: 'performance',
     title: 'Optimize date partitioning',
-    description: 'Partition fact_order table by order_date for better performance and cost control',
-    suggestion: 'Add PARTITION BY DATE(order_date) to table definition',
+    description: 'Partition your denorm tables by a date or timestamp column to prune historic data—e.g. PARTITION BY DATE(claim_open_date).',
+    suggestion: 'Insert PARTITION BY DATE(claim_open_date) into your DDL.',
     impact: 'high',
     autoApplicable: true
   },
   {
     id: 'opt-3',
-    type: 'best-practice',
-    title: 'Add data quality checks',
-    description: 'Include NOT NULL constraints and data validation checks',
-    suggestion: 'Add WHERE clauses to filter invalid records before loading',
+    type: 'performance',
+    title: 'Add incremental merge logic',
+    description: 'Switch from full-table overwrite to a MERGE strategy using a watermark on CLM_DT / EFF_DT, so you only upsert new or changed records.',
+    suggestion: 'Wrap your INSERT into a MERGE ... WHEN MATCHED/NOT MATCHED block.',
     impact: 'medium',
-    autoApplicable: false
+    autoApplicable: true
   },
   {
     id: 'opt-4',
-    type: 'readability', 
-    title: 'Improve code documentation',
-    description: 'Add more detailed comments explaining business logic',
-    suggestion: 'Include field-level comments and transformation reasoning',
-    impact: 'low',
+    type: 'best-practice',
+    title: 'Add data quality checks',
+    description: 'Validate key constraints before loading (e.g. WHERE CUST_ID IS NOT NULL AND CLM_ID IS NOT NULL).',
+    suggestion: 'Prepend a CTE that filters out bad rows and logs rejected records.',
+    impact: 'medium',
     autoApplicable: true
   },
   {
     id: 'opt-5',
-    type: 'performance',
-    title: 'Use MERGE instead of CREATE OR REPLACE',
-    description: 'For incremental updates, MERGE statements are more efficient',
-    suggestion: 'Replace CREATE OR REPLACE with MERGE statements for updates',
-    impact: 'medium',
-    autoApplicable: false
+    type: 'readability',
+    title: 'Improve code documentation',
+    description: 'Insert richer comments (from your DDL descriptions) above each field transformation.',
+    suggestion: 'Auto-generate doc-blocks for each SELECT column.',
+    impact: 'low',
+    autoApplicable: true
+  },
+  {
+    id: 'opt-6',
+    type: 'cost-optimization',
+    title: 'Generate cost estimation',
+    description: 'Estimate slot-time and storage cost for each table based on your sample row counts.',
+    suggestion: 'Add a “-- Estimated cost:” comment at the top of each CREATE block.',
+    impact: 'low',
+    autoApplicable: true
   }
 ];
 

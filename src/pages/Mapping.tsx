@@ -79,6 +79,7 @@ export function Mapping() {
     }
 
     generateAISuggestions();
+    completeMapping(); // Mark mapping as complete after suggestions are generated
   };
 
   const handleTableSelection = (sourceTableId: string, targetTableId: string) => {

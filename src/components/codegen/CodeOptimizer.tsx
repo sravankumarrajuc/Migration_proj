@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { DiffEditor } from '@monaco-editor/react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -21,7 +22,8 @@ interface CodeOptimizerProps {
 const optimizationIcons = {
   performance: Zap,
   'best-practice': CheckCircle,
-  readability: Eye
+  readability: Eye,
+  'cost-optimization': Code
 };
 
 const impactColors = {
@@ -49,39 +51,64 @@ export function CodeOptimizer({
     );
   };
 
+  const selectAllOptimizations = () => {
+    setSelectedOptimizations(mockCodeOptimizations.map(opt => opt.id));
+  };
+
+  const deselectAllOptimizations = () => {
+    setSelectedOptimizations([]);
+  };
+
   const handleOptimizeCode = async () => {
     if (selectedOptimizations.length === 0) return;
 
     setIsOptimizing(true);
-    
-    // Simulate AI optimization process
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    // Apply optimizations to code (enhanced implementation)
+    await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate AI optimization process
+
     let optimized = code;
-    
+
     selectedOptimizations.forEach(optId => {
       const optimization = mockCodeOptimizations.find(opt => opt.id === optId);
+      console.log('Applying optimization:', optimization);
       if (optimization) {
-        // Enhanced simulation of code optimization
-        if (optimization.id === 'performance') {
-          optimized = optimized.replace(/SELECT \*/g, 'SELECT column1, column2, column3');
-          optimized = optimized + '\n-- Optimized for performance: Added specific column selection';
-        } else if (optimization.id === 'readability') {
-          optimized = optimized.replace(/,/g, ',\n  ');
-          optimized = optimized + '\n-- Improved readability: Added proper formatting';
-        } else if (optimization.id === 'security') {
-          optimized = optimized + '\n-- Added security measures: Parameterized queries';
-        } else if (optimization.id === 'maintainability') {
-          optimized = optimized + '\n-- Enhanced maintainability: Added comments and documentation';
+        switch (optimization.id) {
+          case 'opt-1': // Add clustering keys for BigQuery
+            if (platform === 'bigquery') {
+              optimized = optimized.replace(
+                /CREATE OR REPLACE TABLE analytics\.claims_denorm AS\nSELECT/,
+                'CREATE OR REPLACE TABLE analytics.claims_denorm\nCLUSTER BY client_key\nAS\nSELECT'
+              );
+            }
+            break;
+          case 'opt-2': // Optimize date partitioning
+            if (platform === 'bigquery') {
+              optimized = optimized.replace(
+                /CREATE OR REPLACE TABLE analytics\.claims_denorm AS/,
+                'CREATE OR REPLACE TABLE analytics.claims_denorm\nPARTITION BY DATE(claim_open_date)\nAS'
+              );
+            }
+            break;
+          case 'opt-3': // Add incremental merge logic
+            // This is a more complex transformation, for now, just add a comment
+            optimized = optimized + '\n-- TODO: Implement incremental MERGE logic for ' + optimization.title;
+            break;
+          case 'opt-4': // Add data quality checks
+            // This is a more complex transformation, for now, just add a comment
+            optimized = optimized + '\n-- TODO: Implement data quality checks for ' + optimization.title;
+            break;
+          case 'opt-5': // Improve code documentation
+            optimized = optimized + '\n-- Improved code documentation: Added doc-blocks for columns';
+            break;
+          case 'opt-6': // Generate cost estimation
+            optimized = `-- Estimated cost: [Calculated Cost Here]\n` + optimized;
+            break;
+          default:
+            // Fallback for other simulated optimizations
+            optimized = optimized + `\n-- Applied: ${optimization.title}`;
+            break;
         }
       }
     });
-    
-    // Ensure we have meaningful optimized code
-    if (optimized === code && selectedOptimizations.length > 0) {
-      optimized = code + '\n-- Code optimized based on selected improvements';
-    }
 
     setOptimizedCode(optimized);
     setIsOptimizing(false);
@@ -121,9 +148,27 @@ export function CodeOptimizer({
             <div className="space-y-4 pr-2">
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-semibold">Available Optimizations</h3>
-                <Badge variant="outline">
-                  {selectedOptimizations.length} selected
-                </Badge>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={selectAllOptimizations}
+                    disabled={selectedOptimizations.length === mockCodeOptimizations.length}
+                  >
+                    Select All
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={deselectAllOptimizations}
+                    disabled={selectedOptimizations.length === 0}
+                  >
+                    Deselect All
+                  </Button>
+                  <Badge variant="outline">
+                    {selectedOptimizations.length} selected
+                  </Badge>
+                </div>
               </div>
 
               {mockCodeOptimizations.map((optimization) => {
@@ -208,29 +253,27 @@ export function CodeOptimizer({
           <TabsContent value="comparison" className="h-full">
             <div className="h-full space-y-4">
               <h3 className="text-lg font-semibold">Before vs After Comparison</h3>
-              <div className="grid grid-cols-2 gap-4 h-[400px]">
-                <div>
-                  <h4 className="text-sm font-medium mb-2">Before</h4>
-                  <div className="border rounded-md h-[350px]">
-                    <CodeEditor
-                      code={code}
-                      language={platform === 'bigquery' ? 'sql' : platform === 'dbt' ? 'sql' : 'python'}
-                      readOnly
-                      height="350px"
-                    />
-                  </div>
-                </div>
-                <div>
-                  <h4 className="text-sm font-medium mb-2">After</h4>
-                  <div className="border rounded-md h-[350px]">
-                    <CodeEditor
-                      code={optimizedCode || code}
-                      language={platform === 'bigquery' ? 'sql' : platform === 'dbt' ? 'sql' : 'python'}
-                      readOnly
-                      height="350px"
-                    />
-                  </div>
-                </div>
+              <div className="h-[400px] border rounded-md">
+                <DiffEditor
+                  key={open ? 'diff-editor-open' : 'diff-editor-closed'}
+                  height="100%"
+                  language={platform === 'bigquery' ? 'sql' : platform === 'dbt' ? 'sql' : 'python'}
+                  original={code}
+                  modified={optimizedCode || code}
+                  theme="vs-dark"
+                  options={{
+                    readOnly: true,
+                    renderSideBySide: true, // Display side-by-side diff
+                    minimap: { enabled: true },
+                    scrollBeyondLastLine: false,
+                    fontSize: 13,
+                    wordWrap: 'on',
+                    lineNumbers: 'on',
+                    folding: true,
+                    automaticLayout: true,
+                    padding: { top: 16, bottom: 16 },
+                  }}
+                />
               </div>
             </div>
           </TabsContent>
