@@ -4,12 +4,12 @@ import { ArrowLeft, Download, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useMigrationStore } from '@/store/migrationStore';
-import { FileComparison } from '@/components/validation/FileComparison';
+import { SchemaComparisonTable } from '@/components/validation/SchemaComparisonTable';
 
 export function Validation() {
   const { projectId } = useParams();
   const navigate = useNavigate();
-  const { currentProject, setCurrentPhase, codeGenerationState } = useMigrationStore();
+  const { currentProject, setCurrentPhase, completeProject } = useMigrationStore();
 
   // Set current phase to validation only if not already set
   useEffect(() => {
@@ -17,6 +17,13 @@ export function Validation() {
       setCurrentPhase('validation');
     }
   }, [currentProject, setCurrentPhase]);
+
+  const handleCompleteMigration = () => {
+    completeProject();
+    alert('Migration completed successfully!');
+    navigate('/projects'); // Or wherever you want to redirect after completion
+  };
+
 
   if (!currentProject) {
     return null;
@@ -81,7 +88,7 @@ export function Validation() {
         {/* Validation Placeholder Content */}
         <div className="space-y-6">
           {/* Header Cards Placeholder */}
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
             <Card>
               <CardHeader className="pb-2">
                 <CardDescription>Tables Compared</CardDescription>
@@ -96,20 +103,8 @@ export function Validation() {
             </Card>
             <Card>
               <CardHeader className="pb-2">
-                <CardDescription>Anomalies Detected</CardDescription>
-                <CardTitle className="text-2xl">0</CardTitle>
-              </CardHeader>
-            </Card>
-            <Card>
-              <CardHeader className="pb-2">
                 <CardDescription>Schema Accuracy</CardDescription>
-                <CardTitle className="text-2xl">100 %</CardTitle>
-              </CardHeader>
-            </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardDescription>Tolerance</CardDescription>
-                <CardTitle className="text-2xl">1.0 %</CardTitle>
+                <CardTitle className="text-2xl">78 %</CardTitle>
               </CardHeader>
             </Card>
           </div>
@@ -134,14 +129,19 @@ export function Validation() {
                 Export Results
               </Button>
             </div>
-
+  
             <Button
-              onClick={() => alert('Complete Migration functionality is a placeholder.')}
-              disabled={true} // Disable since validation is placeholder
+              onClick={handleCompleteMigration}
+              disabled={false} // Always enabled as per user's request to hide comparison
               className="min-w-[200px]"
             >
               Complete Migration
             </Button>
+          </div>
+
+          <div className="mt-8">
+            <h2 className="text-2xl font-bold mb-4">Schema Comparison</h2>
+            <SchemaComparisonTable />
           </div>
 
           {/* Completion Workflow Modal (Keep, but it will be disabled by the button above) */}
@@ -158,13 +158,6 @@ export function Validation() {
           /> */}
         </div>
       </div>
-      <FileComparison
-        tolerance={0.01}
-        legacyCode={codeGenerationState.originalCodeForComparison}
-        migratedCode={codeGenerationState.optimizedCodeForComparison}
-      />
-      {console.log('Legacy Code for Comparison:', codeGenerationState.originalCodeForComparison)}
-      {console.log('Migrated Code for Comparison:', codeGenerationState.optimizedCodeForComparison)}
     </>
   );
 }

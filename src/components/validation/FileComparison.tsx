@@ -13,9 +13,10 @@ interface FileComparisonProps {
   tolerance: number;
   legacyCode?: string;
   migratedCode?: string;
+  onDifferencesDetected?: (differences: number) => void;
 }
 
-export function FileComparison({ tolerance, legacyCode, migratedCode }: FileComparisonProps) {
+export function FileComparison({ tolerance, legacyCode, migratedCode, onDifferencesDetected }: FileComparisonProps) {
   const [showSettings, setShowSettings] = useState(false);
   const [currentTolerance, setCurrentTolerance] = useState(tolerance);
 
@@ -29,6 +30,11 @@ export function FileComparison({ tolerance, legacyCode, migratedCode }: FileComp
   // Calculate differences (a very basic example, real diffing would be more complex)
   const differences = displayLegacyCode !== displayMigratedCode ? 1 : 0;
   const status = differences > 0 ? 'minor_diff' : 'match';
+
+  // Report differences back to parent component
+  if (onDifferencesDetected) {
+    onDifferencesDetected(differences);
+  }
 
   const getStatusColor = (status: string) => {
     switch (status) {
