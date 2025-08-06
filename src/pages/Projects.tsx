@@ -27,6 +27,7 @@ export default function Projects() {
     sourceDialect: '' as SchemaDialect,
     targetDialect: '' as SchemaDialect,
   });
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
 
   // Load projects on component mount and refresh
   useEffect(() => {
@@ -131,6 +132,7 @@ export default function Projects() {
       sourceDialect: template.sourceDialect,
       targetDialect: template.targetDialect,
     });
+    setSelectedTemplateId(template.id); // Set the selected template ID
   };
 
   const getStatusIcon = (status: Project['status']) => {
@@ -185,7 +187,7 @@ export default function Projects() {
                     {projectTemplates.map((template) => (
                       <Card
                         key={template.id}
-                        className="cursor-pointer hover:shadow-card transition-shadow"
+                        className={`cursor-pointer hover:shadow-card transition-shadow ${selectedTemplateId === template.id ? 'border-2 border-primary' : ''}`}
                         onClick={() => handleTemplateSelect(template)}
                       >
                         <CardHeader className="pb-3">

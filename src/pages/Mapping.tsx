@@ -26,8 +26,8 @@ export function Mapping() {
     discoveryState,
     startMapping,
     updateMappingProgress,
-    setSelectedTables,
     setTableMapping,
+    setSelectedTables, // Added this
     generateAISuggestions,
     acceptMapping,
     completeMapping,
@@ -36,7 +36,8 @@ export function Mapping() {
 
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [showReview, setShowReview] = useState(false);
-  const [filterMappings, setFilterMappings] = useState(true); // Controls filtering for MappingCanvas and AISuggestionsPanel
+  const [showAllFieldMappings, setShowAllFieldMappings] = useState(false); // New state for AI Suggestions panel visibility
+  const [displayAllCanvasMappings, setDisplayAllCanvasMappings] = useState(false); // New state for Mapping Canvas visibility
 
   useEffect(() => {
     if (currentPhase !== 'mapping') {
@@ -51,19 +52,17 @@ export function Mapping() {
       mockTableMappings.forEach(mapping => {
         setTableMapping(mapping);
       });
-      
-      // Select the first mapping
-      const firstMapping = mockTableMappings[0];
-      setSelectedTables(firstMapping.sourceTableId, firstMapping.targetTableId);
+      // Set selected tables for the button to be enabled
+      // Using 'DB2_CUSTOMERS' and 'customers_denorm' as they have field mappings with varying confidence
+      setSelectedTables('DB2_CUSTOMERS', 'customers_denorm');
     }
-  }, [mappingState.allMappings.length, setSelectedTables, setTableMapping]);
+  }, [mappingState.allMappings.length, setTableMapping, setSelectedTables]);
 
   const handleGenerateAISuggestions = async () => {
-    if (!mappingState.selectedSourceTable || !mappingState.selectedTargetTable) return;
-
     startMapping();
     setShowSuggestions(true);
-    setFilterMappings(false); // Show all mappings and suggestions after generating
+    setShowAllFieldMappings(true); // Show all suggestions in AI Suggestions panel after generating suggestions
+    setDisplayAllCanvasMappings(true); // Show all mappings in Mapping Canvas after generating suggestions
 
     // Simulate AI processing
     const steps = [
@@ -84,15 +83,6 @@ export function Mapping() {
     completeMapping(); // Mark mapping as complete after suggestions are generated
   };
 
-  const handleTableSelection = (sourceTableId: string, targetTableId: string) => {
-    setSelectedTables(sourceTableId, targetTableId);
-    const existingMapping = mockTableMappings.find(
-      m => m.sourceTableId === sourceTableId && m.targetTableId === targetTableId
-    );
-    if (existingMapping) {
-      setTableMapping(existingMapping);
-    }
-  };
 
   const handleProceedToCodeGeneration = () => {
     console.log('Proceeding to code generation...');
@@ -112,12 +102,16 @@ export function Mapping() {
     navigate(`/codegen/${projectId}`);
   };
 
-  const availableTablePairs = [
-    { source: 'customers', target: 'dim_customer', label: 'Customers → Customer Dimension' },
-    { source: 'orders', target: 'fact_order', label: 'Orders → Order Facts' },
-  ];
+  const availableTablePairs = mappingState.allMappings.map(m => ({
+    source: m.sourceTableId,
+    target: m.targetTableId,
+    label: `${m.sourceTableId} → ${m.targetTableId}`
+  }));
 
-  const overallProgress = mockTableMappings.reduce((sum, m) => sum + m.completionPercentage, 0) / mockTableMappings.length;
+  // Calculate overall progress based on all mappings in the store
+  const overallProgress = mappingState.allMappings.length > 0
+    ? mappingState.allMappings.reduce((sum, m) => sum + m.completionPercentage, 0) / mappingState.allMappings.length
+    : 0;
 
   if (!currentProject || !discoveryState.lineageGraph) {
     return (
@@ -185,29 +179,6 @@ export function Mapping() {
             </div>
           </div>
 
-          {/* Table Selection */}
-          <div className="flex items-center gap-4 mb-4">
-            <div className="flex-1">
-              <Select
-                value={`${mappingState.selectedSourceTable}-${mappingState.selectedTargetTable}`}
-                onValueChange={(value) => {
-                  const [source, target] = value.split('-');
-                  handleTableSelection(source, target);
-                }}
-              >
-                <SelectTrigger className="hidden">
-                  <SelectValue placeholder="Select table mapping..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {availableTablePairs.map((pair) => (
-                    <SelectItem key={`${pair.source}-${pair.target}`} value={`${pair.source}-${pair.target}`}>
-                      {pair.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
 
           {/* Progress */}
           {mappingState.isProcessing && (
@@ -239,7 +210,16 @@ export function Mapping() {
 
             {/* Mapping Canvas */}
             <ResizablePanel defaultSize={40} minSize={30}>
-              <MappingCanvas filterConfidence={filterMappings ? 90 : 0} />
+              <MappingCanvas
+                tableMappings={displayAllCanvasMappings
+                  ? mappingState.allMappings
+                  : mappingState.allMappings.map(tableMapping => ({
+                      ...tableMapping,
+                      fieldMappings: tableMapping.fieldMappings.filter(fm => fm.confidence >= 90)
+                    }))
+                } // Conditionally pass mappings
+                showAllText={displayAllCanvasMappings} // Pass the new state for text visibility
+              />
             </ResizablePanel>
 
             <ResizableHandle withHandle />
@@ -249,7 +229,7 @@ export function Mapping() {
               {showSuggestions ? (
                 <AISuggestionsPanel
                   onClose={() => setShowSuggestions(false)}
-                  filterConfidence={filterMappings ? 90 : 0} // Pass filter prop
+                  showAllSuggestions={showAllFieldMappings} // Pass the new state
                 />
               ) : (
                 <TargetSchemaPanel />

@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { useMigrationStore } from '@/store/migrationStore';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -10,10 +11,10 @@ import { cn } from '@/lib/utils';
 
 interface AISuggestionsPanelProps {
   onClose: () => void;
-  filterConfidence?: number; // New prop for filtering suggestions
+  showAllSuggestions: boolean; // New prop to control initial display
 }
 
-export function AISuggestionsPanel({ onClose, filterConfidence = 0 }: AISuggestionsPanelProps) {
+export function AISuggestionsPanel({ onClose, showAllSuggestions }: AISuggestionsPanelProps) {
   const {
     mappingState,
     discoveryState,
@@ -21,13 +22,19 @@ export function AISuggestionsPanel({ onClose, filterConfidence = 0 }: AISuggesti
     bulkAcceptHighConfidence
   } = useMigrationStore();
 
-  const filteredSuggestions = filterConfidence > 0
-    ? mappingState.suggestions.filter(s => s.confidence >= filterConfidence)
-    : mappingState.suggestions;
+  const [displayAll, setDisplayAll] = useState(showAllSuggestions);
 
-  const highConfidenceSuggestions = filteredSuggestions.filter(s => s.confidence >= 90);
-  const mediumConfidenceSuggestions = filteredSuggestions.filter(s => s.confidence >= 70 && s.confidence < 90);
-  const lowConfidenceSuggestions = filteredSuggestions.filter(s => s.confidence < 70);
+  useEffect(() => {
+    setDisplayAll(showAllSuggestions);
+  }, [showAllSuggestions]);
+
+  const highConfidenceSuggestions = mappingState.suggestions.filter(s => s.confidence >= 90);
+  const mediumConfidenceSuggestions = mappingState.suggestions.filter(s => s.confidence >= 70 && s.confidence < 90);
+  const lowConfidenceSuggestions = mappingState.suggestions.filter(s => s.confidence < 70);
+
+  const suggestionsToDisplay = displayAll
+    ? mappingState.suggestions
+    : highConfidenceSuggestions;
 
   const getSourceColumn = (sourceTableId: string, sourceColumnId: string) => {
     if (!discoveryState.lineageGraph) return null;
@@ -191,14 +198,20 @@ export function AISuggestionsPanel({ onClose, filterConfidence = 0 }: AISuggesti
       <CardContent className="flex-1 overflow-hidden p-0">
         <ScrollArea className="h-full">
           <div className="p-4 space-y-6">
-            {filteredSuggestions.length === 0 ? (
+            {suggestionsToDisplay.length === 0 && mappingState.suggestions.length > 0 && !displayAll ? (
+              <div className="text-center py-8">
+                <Sparkles className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-lg font-semibold mb-2">No High Confidence Suggestions</h3>
+                <p className="text-muted-foreground">
+                  Click 'Generate AI Suggestions' to view all mappings.
+                </p>
+              </div>
+            ) : suggestionsToDisplay.length === 0 && mappingState.suggestions.length === 0 ? (
               <div className="text-center py-8">
                 <Sparkles className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                 <h3 className="text-lg font-semibold mb-2">No Suggestions Available</h3>
                 <p className="text-muted-foreground">
-                  {filterConfidence > 0
-                    ? `No suggestions with ${filterConfidence}% or more confidence.`
-                    : "Generate AI suggestions to see mapping recommendations"}
+                  Generate AI suggestions to see mapping recommendations.
                 </p>
               </div>
             ) : (
@@ -210,23 +223,23 @@ export function AISuggestionsPanel({ onClose, filterConfidence = 0 }: AISuggesti
                   "No high confidence suggestions"
                 )}
 
-                {highConfidenceSuggestions.length > 0 && mediumConfidenceSuggestions.length > 0 && (
+                {displayAll && highConfidenceSuggestions.length > 0 && mediumConfidenceSuggestions.length > 0 && (
                   <Separator />
                 )}
 
-                {renderSuggestionGroup(
+                {displayAll && renderSuggestionGroup(
                   "Medium Confidence",
                   mediumConfidenceSuggestions,
                   <Zap className="h-4 w-4 text-yellow-600" />,
                   "No medium confidence suggestions"
                 )}
 
-                {(highConfidenceSuggestions.length > 0 || mediumConfidenceSuggestions.length > 0) && 
+                {displayAll && (highConfidenceSuggestions.length > 0 || mediumConfidenceSuggestions.length > 0) &&
                  lowConfidenceSuggestions.length > 0 && (
                   <Separator />
                 )}
 
-                {renderSuggestionGroup(
+                {displayAll && renderSuggestionGroup(
                   "Low Confidence",
                   lowConfidenceSuggestions,
                   <X className="h-4 w-4 text-red-600" />,
