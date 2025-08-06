@@ -114,8 +114,9 @@ export function CodeOptimizer({
       }
     });
 
-    setOptimizedCode(optimized);
+setOptimizedCode(optimized);
     setIsOptimizing(false);
+    onOpenChange(false); // Close the dialog after optimization
   };
 
   const handleApplyChanges = () => {
