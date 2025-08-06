@@ -10,25 +10,25 @@ import { getTransformationIcon, getConfidenceBadgeColor } from '@/data/mockMappi
 import { TransformationType } from '@/types/migration';
 import { cn } from '@/lib/utils';
 
+import { TableMapping } from '@/types/migration'; // Add this import
+
 interface MappingCanvasProps {
-  filterConfidence?: number;
+  tableMappings: TableMapping[];
+  minCompleteness?: number;
 }
 
-export function MappingCanvas({ filterConfidence = 0 }: MappingCanvasProps) {
-  const { mappingState, discoveryState, updateFieldMapping, removeFieldMapping } = useMigrationStore();
+export function MappingCanvas({ tableMappings, minCompleteness = 90 }: MappingCanvasProps) {
+  const { discoveryState, updateFieldMapping, removeFieldMapping } = useMigrationStore();
 
   const currentMappings = useMemo(() => {
-    if (!mappingState.currentTableMapping) return [];
-    
-    const allFieldMappings = mappingState.currentTableMapping.fieldMappings.filter(fm =>
-      fm.status === 'approved' || fm.status === 'suggested' || fm.status === 'rejected'
+    const allFieldMappings = tableMappings.flatMap(tableMapping =>
+      tableMapping.fieldMappings.filter(fm =>
+        fm.status === 'approved' || fm.status === 'suggested' || fm.status === 'rejected'
+      )
     );
 
-    if (filterConfidence > 0) {
-      return allFieldMappings.filter(fm => fm.confidence >= filterConfidence);
-    }
-    return allFieldMappings;
-  }, [mappingState.currentTableMapping, filterConfidence]);
+    return allFieldMappings.filter(fm => fm.confidence >= minCompleteness);
+  }, [tableMappings, minCompleteness]);
 
   const getSourceColumn = (sourceTableId: string, sourceColumnId: string) => {
     if (!discoveryState.lineageGraph) return null;
@@ -61,21 +61,6 @@ export function MappingCanvas({ filterConfidence = 0 }: MappingCanvasProps) {
     }
   };
 
-  if (!mappingState.selectedSourceTable || !mappingState.selectedTargetTable) {
-    return (
-      <Card className="h-full flex items-center justify-center">
-        <CardContent>
-          <div className="text-center">
-            <ArrowRight className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-lg font-semibold mb-2">Select Table Mapping</h3>
-            <p className="text-muted-foreground">
-              Choose source and target tables to view field mappings
-            </p>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
 
   return (
     <Card className="h-full flex flex-col">
@@ -85,7 +70,7 @@ export function MappingCanvas({ filterConfidence = 0 }: MappingCanvasProps) {
           Field Mappings
         </CardTitle>
         <div className="text-sm text-muted-foreground">
-          {mappingState.selectedSourceTable} → {mappingState.selectedTargetTable}
+          Displaying field mappings for tables with &ge; {minCompleteness}% completeness.
         </div>
       </CardHeader>
 
@@ -97,8 +82,8 @@ export function MappingCanvas({ filterConfidence = 0 }: MappingCanvasProps) {
                 <Code className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                 <h3 className="text-lg font-semibold mb-2">No Mappings Yet</h3>
                 <p className="text-muted-foreground mb-4">
-                  {filterConfidence > 0
-                    ? `No mappings with ${filterConfidence}% or more confidence.`
+                  {minCompleteness > 0
+                    ? `No mappings with ${minCompleteness}% or more completeness.`
                     : "Generate AI suggestions or create manual mappings to get started"}
                 </p>
               </div>

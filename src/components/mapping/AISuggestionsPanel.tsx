@@ -10,10 +10,10 @@ import { cn } from '@/lib/utils';
 
 interface AISuggestionsPanelProps {
   onClose: () => void;
-  filterConfidence?: number; // New prop for filtering suggestions
+  minCompleteness?: number; // New prop for filtering suggestions
 }
 
-export function AISuggestionsPanel({ onClose, filterConfidence = 0 }: AISuggestionsPanelProps) {
+export function AISuggestionsPanel({ onClose, minCompleteness = 0 }: AISuggestionsPanelProps) {
   const {
     mappingState,
     discoveryState,
@@ -21,8 +21,8 @@ export function AISuggestionsPanel({ onClose, filterConfidence = 0 }: AISuggesti
     bulkAcceptHighConfidence
   } = useMigrationStore();
 
-  const filteredSuggestions = filterConfidence > 0
-    ? mappingState.suggestions.filter(s => s.confidence >= filterConfidence)
+  const filteredSuggestions = minCompleteness > 0
+    ? mappingState.suggestions.filter(s => s.confidence >= minCompleteness)
     : mappingState.suggestions;
 
   const highConfidenceSuggestions = filteredSuggestions.filter(s => s.confidence >= 90);
@@ -196,8 +196,8 @@ export function AISuggestionsPanel({ onClose, filterConfidence = 0 }: AISuggesti
                 <Sparkles className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                 <h3 className="text-lg font-semibold mb-2">No Suggestions Available</h3>
                 <p className="text-muted-foreground">
-                  {filterConfidence > 0
-                    ? `No suggestions with ${filterConfidence}% or more confidence.`
+                  {minCompleteness > 0
+                    ? `No suggestions with ${minCompleteness}% or more completeness.`
                     : "Generate AI suggestions to see mapping recommendations"}
                 </p>
               </div>

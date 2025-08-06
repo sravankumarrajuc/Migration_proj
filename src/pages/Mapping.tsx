@@ -26,7 +26,6 @@ export function Mapping() {
     discoveryState,
     startMapping,
     updateMappingProgress,
-    setSelectedTables,
     setTableMapping,
     generateAISuggestions,
     acceptMapping,
@@ -46,20 +45,18 @@ export function Mapping() {
 
   useEffect(() => {
     // Initialize with mock data if available
-    if (mockTableMappings.length > 0 && mappingState.allMappings.length === 0) {
+    const filteredMockTableMappings = mockTableMappings.filter(m => m.completionPercentage >= 90);
+
+    if (filteredMockTableMappings.length > 0 && mappingState.allMappings.length === 0) {
       // Add all mock mappings to the store
-      mockTableMappings.forEach(mapping => {
+      filteredMockTableMappings.forEach(mapping => {
         setTableMapping(mapping);
       });
       
-      // Select the first mapping
-      const firstMapping = mockTableMappings[0];
-      setSelectedTables(firstMapping.sourceTableId, firstMapping.targetTableId);
     }
-  }, [mappingState.allMappings.length, setSelectedTables, setTableMapping]);
+  }, [mappingState.allMappings.length, setTableMapping]);
 
   const handleGenerateAISuggestions = async () => {
-    if (!mappingState.selectedSourceTable || !mappingState.selectedTargetTable) return;
 
     startMapping();
     setShowSuggestions(true);
@@ -84,15 +81,6 @@ export function Mapping() {
     completeMapping(); // Mark mapping as complete after suggestions are generated
   };
 
-  const handleTableSelection = (sourceTableId: string, targetTableId: string) => {
-    setSelectedTables(sourceTableId, targetTableId);
-    const existingMapping = mockTableMappings.find(
-      m => m.sourceTableId === sourceTableId && m.targetTableId === targetTableId
-    );
-    if (existingMapping) {
-      setTableMapping(existingMapping);
-    }
-  };
 
   const handleProceedToCodeGeneration = () => {
     console.log('Proceeding to code generation...');
@@ -112,12 +100,15 @@ export function Mapping() {
     navigate(`/codegen/${projectId}`);
   };
 
-  const availableTablePairs = [
-    { source: 'customers', target: 'dim_customer', label: 'Customers → Customer Dimension' },
-    { source: 'orders', target: 'fact_order', label: 'Orders → Order Facts' },
-  ];
+  const filteredTableMappings = mockTableMappings.filter(m => m.completionPercentage >= 90);
 
-  const overallProgress = mockTableMappings.reduce((sum, m) => sum + m.completionPercentage, 0) / mockTableMappings.length;
+  const availableTablePairs = filteredTableMappings.map(m => ({
+    source: m.sourceTableId,
+    target: m.targetTableId,
+    label: `${m.sourceTableId} → ${m.targetTableId}`
+  }));
+
+  const overallProgress = filteredTableMappings.reduce((sum, m) => sum + m.completionPercentage, 0) / filteredTableMappings.length;
 
   if (!currentProject || !discoveryState.lineageGraph) {
     return (
@@ -185,29 +176,6 @@ export function Mapping() {
             </div>
           </div>
 
-          {/* Table Selection */}
-          <div className="flex items-center gap-4 mb-4">
-            <div className="flex-1">
-              <Select
-                value={`${mappingState.selectedSourceTable}-${mappingState.selectedTargetTable}`}
-                onValueChange={(value) => {
-                  const [source, target] = value.split('-');
-                  handleTableSelection(source, target);
-                }}
-              >
-                <SelectTrigger className="hidden">
-                  <SelectValue placeholder="Select table mapping..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {availableTablePairs.map((pair) => (
-                    <SelectItem key={`${pair.source}-${pair.target}`} value={`${pair.source}-${pair.target}`}>
-                      {pair.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
 
           {/* Progress */}
           {mappingState.isProcessing && (
@@ -239,7 +207,7 @@ export function Mapping() {
 
             {/* Mapping Canvas */}
             <ResizablePanel defaultSize={40} minSize={30}>
-              <MappingCanvas filterConfidence={filterMappings ? 90 : 0} />
+              <MappingCanvas tableMappings={filteredTableMappings} minCompleteness={90} />
             </ResizablePanel>
 
             <ResizableHandle withHandle />
@@ -249,7 +217,7 @@ export function Mapping() {
               {showSuggestions ? (
                 <AISuggestionsPanel
                   onClose={() => setShowSuggestions(false)}
-                  filterConfidence={filterMappings ? 90 : 0} // Pass filter prop
+                  minCompleteness={filterMappings ? 90 : 0} // Pass filter prop
                 />
               ) : (
                 <TargetSchemaPanel />
