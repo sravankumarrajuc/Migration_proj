@@ -12,20 +12,17 @@ import {
   Position,
   MarkerType,
   Handle,
+  applyNodeChanges, // Import applyNodeChanges
+  NodeChange,       // Import NodeChange
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { LineageGraph as LineageGraphType, TableNode, Relationship } from '@/types/migration';
+import { LineageGraph as LineageGraphType, TableNode, Relationship, TableNodeData } from '@/types/migration'; // Import TableNodeData
 import { Badge } from '@/components/ui/badge';
 import { Database } from 'lucide-react';
 
 interface LineageGraphProps {
   lineageGraph: LineageGraphType;
-}
-
-interface TableNodeData extends Record<string, unknown> {
-  table: TableNode;
-  label: string;
-  type: 'source' | 'target' | 'intermediate';
+  onNodesPositionsChange: (nodes: Node<TableNodeData>[]) => void; // Update prop type
 }
 
  // Custom Table Node Component
@@ -36,15 +33,11 @@ interface TableNodeData extends Record<string, unknown> {
      <div className={`bg-card border rounded-lg shadow-lg min-w-[250px] ${
        type === 'source' ? 'border-blue-200' : 'border-green-200'
      }`}>
-       {/* Source Handle (for source tables) */}
-       {type === 'source' && (
-         <Handle type="source" position={Position.Right} className="w-3 h-3 bg-blue-500" />
-       )}
+       {/* Source Handle */}
+       <Handle type="source" position={Position.Right} className="w-3 h-3 bg-blue-500" />
 
-       {/* Target Handle (for target tables) */}
-       {type === 'target' && (
-         <Handle type="target" position={Position.Left} className="w-3 h-3 bg-green-500" />
-       )}
+       {/* Target Handle */}
+       <Handle type="target" position={Position.Left} className="w-3 h-3 bg-green-500" />
 
        {/* Header */}
        <div className={`px-4 py-3 border-b rounded-t-lg ${
@@ -98,7 +91,7 @@ const nodeTypes = {
   tableNode: TableFlowNode,
 };
 
-export function LineageGraph({ lineageGraph }: LineageGraphProps) {
+export function LineageGraph({ lineageGraph, onNodesPositionsChange }: LineageGraphProps) { // Destructure onNodesPositionsChange
   const initialNodes: Node<TableNodeData>[] = useMemo(() => {
     return lineageGraph.tables.map(table => ({
       id: table.id,
@@ -121,17 +114,14 @@ export function LineageGraph({ lineageGraph }: LineageGraphProps) {
         return null; // Skip if tables are not found
       }
 
-      const isSourceToSource = sourceTable.type === 'source' && targetTable.type === 'source';
       const isSourceToTarget = sourceTable.type === 'source' && targetTable.type === 'target';
 
       let edgeStyle = {};
       let markerColor = '';
       let animated = true;
 
-      if (isSourceToSource) {
-        edgeStyle = { strokeWidth: 3, stroke: '#3b82f6' }; // Thick blue line
-        markerColor = '#3b82f6';
-      } else if (isSourceToTarget) {
+      // Only render source-to-target relationships here. Source-to-source will be handled by sourceToSourceMappingEdges.
+      if (isSourceToTarget) {
         edgeStyle = { strokeDasharray: '5 5', stroke: '#22c55e', strokeWidth: 2 }; // Dotted green line
         markerColor = '#22c55e';
       } else {
@@ -139,6 +129,11 @@ export function LineageGraph({ lineageGraph }: LineageGraphProps) {
         edgeStyle = { stroke: '#999', strokeWidth: 1 };
         markerColor = '#999';
         animated = false;
+      }
+
+      // If it's a source-to-source relationship, skip it here as it will be handled by sourceToSourceMappingEdges
+      if (sourceTable.type === 'source' && targetTable.type === 'source') {
+        return null;
       }
 
       // Determine label based on relationship type
@@ -205,11 +200,83 @@ export function LineageGraph({ lineageGraph }: LineageGraphProps) {
       };
     }).filter(Boolean) as Edge[];
 
-    return [...relationshipEdges, ...mappingEdges];
-  }, [lineageGraph.relationships, lineageGraph.tables, lineageGraph.mappings]);
+    const keyMappingEdges = lineageGraph.keyMappings.map((keyMapping) => {
+      const sourceTable = lineageGraph.tables.find(t => t.name === keyMapping.sourceTable);
+      const targetTable = lineageGraph.tables.find(t => t.name === keyMapping.targetTable);
 
-  const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
+      if (!sourceTable || !targetTable) {
+        return null; // Skip if tables are not found
+      }
+
+      return {
+        id: keyMapping.id,
+        source: sourceTable.id,
+        target: targetTable.id,
+        type: 'smoothstep',
+        animated: true,
+        style: { strokeWidth: 4, stroke: '#8b5cf6' }, // Thick purple for key mappings
+        markerEnd: {
+          type: MarkerType.ArrowClosed,
+          color: '#8b5cf6',
+        },
+        label: `${keyMapping.sourceColumn} -> ${keyMapping.targetColumn}`,
+        labelStyle: {
+          fontSize: 11,
+          fontWeight: 500,
+        },
+        labelBgStyle: {
+          fill: '#ffffff',
+          fillOpacity: 0.9,
+        },
+      };
+    }).filter(Boolean) as Edge[];
+
+    const sourceToSourceMappingEdges = lineageGraph.sourceToSourceMappings.map((s2sMapping) => {
+      const sourceTable = lineageGraph.tables.find(t => t.name === s2sMapping.sourceTable);
+      const targetTable = lineageGraph.tables.find(t => t.name === s2sMapping.targetTable);
+
+      if (!sourceTable || !targetTable) {
+        return null; // Skip if tables are not found
+      }
+
+      return {
+        id: s2sMapping.id,
+        source: sourceTable.id,
+        target: targetTable.id,
+        type: 'smoothstep',
+        animated: true,
+        style: { strokeWidth: 2, stroke: '#ef4444', strokeDasharray: '8 4' }, // Dashed red line for source-to-source mappings
+        markerEnd: {
+          type: MarkerType.ArrowClosed,
+          color: '#ef4444',
+        },
+        label: s2sMapping.description || `${Math.round(s2sMapping.confidence * 100)}%`,
+        labelStyle: {
+          fontSize: 11,
+          fontWeight: 500,
+        },
+        labelBgStyle: {
+          fill: '#ffffff',
+          fillOpacity: 0.9,
+        },
+      };
+    }).filter(Boolean) as Edge[];
+
+    return [...relationshipEdges, ...mappingEdges, ...keyMappingEdges, ...sourceToSourceMappingEdges];
+  }, [lineageGraph.relationships, lineageGraph.tables, lineageGraph.mappings, lineageGraph.keyMappings, lineageGraph.sourceToSourceMappings]);
+
+  const [nodes, setNodes] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+
+  const onNodesChange = useCallback(
+    (changes: NodeChange[]) => {
+      setNodes((nds) => applyNodeChanges(changes, nds) as Node<TableNodeData>[]);
+      // Extract positions from changes and call the prop callback
+      const updatedNodes = applyNodeChanges(changes, nodes) as Node<TableNodeData>[]; // Cast to correct type
+      onNodesPositionsChange(updatedNodes);
+    },
+    [setNodes, nodes, onNodesPositionsChange]
+  );
 
   const onConnect = useCallback(
     (params: Connection) => setEdges((eds) => addEdge(params, eds)),

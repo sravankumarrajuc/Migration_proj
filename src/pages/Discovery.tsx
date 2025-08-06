@@ -1,5 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { Node } from '@xyflow/react'; // Import Node
+import { TableNode, TableNodeData } from '@/types/migration'; // Import TableNodeData
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
@@ -8,6 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { useMigrationStore } from '@/store/migrationStore';
 import { LineageGraph } from '@/components/discovery/LineageGraph';
 import { MetadataCatalog } from '@/components/discovery/MetadataCatalog';
+import { SourceToSourceLineageGraph } from '@/components/discovery/SourceToSourceLineageGraph';
 import { mockLineageGraph, discoverySteps } from '@/data/mockLineageData';
 import { ArrowRight, Database, GitBranch, BarChart3, CheckCircle } from 'lucide-react';
 import { toast } from 'sonner';
@@ -15,17 +18,37 @@ import { toast } from 'sonner';
 export default function Discovery() {
   const { projectId } = useParams();
   const navigate = useNavigate();
-  const { 
-    discoveryState, 
-    startDiscovery, 
-    updateDiscoveryProgress, 
-    setLineageGraph, 
+  const {
+    discoveryState,
+    startDiscovery,
+    updateDiscoveryProgress,
+    setLineageGraph,
     completeDiscovery,
     canProceedToNextPhase,
-    setCurrentPhase 
+    setCurrentPhase
   } = useMigrationStore();
   
   const [activeTab, setActiveTab] = useState('overview');
+
+  const handleNodesPositionsChange = useCallback((updatedNodes: Node<TableNodeData>[]) => { // Correct Node type
+    if (!discoveryState.lineageGraph) return;
+
+    const newTables = discoveryState.lineageGraph.tables.map(table => {
+      const updatedNode = updatedNodes.find(node => node.id === table.id);
+      if (updatedNode && updatedNode.position) { // Now 'position' should be recognized
+        return {
+          ...table,
+          position: updatedNode.position,
+        };
+      }
+      return table;
+    });
+
+    setLineageGraph({
+      ...discoveryState.lineageGraph,
+      tables: newTables,
+    });
+  }, [discoveryState.lineageGraph, setLineageGraph]);
 
   useEffect(() => {
     // Set current phase to discovery
@@ -221,6 +244,7 @@ export default function Discovery() {
             </Card>
           </TabsContent>
 
+
           <TabsContent value="lineage">
             <Card>
               <CardHeader>
@@ -230,7 +254,10 @@ export default function Discovery() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <LineageGraph lineageGraph={discoveryState.lineageGraph} />
+                <LineageGraph
+                  lineageGraph={discoveryState.lineageGraph}
+                  onNodesPositionsChange={handleNodesPositionsChange}
+                />
               </CardContent>
             </Card>
           </TabsContent>

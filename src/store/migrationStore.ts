@@ -14,6 +14,7 @@ import {
   GeneratedCode,
   UserProfile
 } from '@/types/migration';
+import { customerMappings, claimsMappings } from '@/data/mockMappingData';
 
 interface MigrationState {
   // Current project context
@@ -458,17 +459,28 @@ export const useMigrationStore = create<MigrationState>()(
       generateAISuggestions: () => {
         const { mappingState } = get();
         // Simulate AI suggestion generation with mock data
-        import('@/data/mockMappingData').then(({ mockCustomerMappings, mockOrderMappings }) => {
-          const suggestions = mappingState.selectedSourceTable === 'customers' 
-            ? mockCustomerMappings 
-            : mockOrderMappings;
+        const suggestions = mappingState.selectedSourceTable === 'customers'
+            ? customerMappings
+            : claimsMappings; // Assuming 'orders' maps to 'claims' for mock data
           
-          set((state) => ({
-            mappingState: {
-              ...state.mappingState,
-              suggestions,
-            },
-          }));
+        set((state) => {
+            const currentTableMapping = state.mappingState.currentTableMapping;
+            const updatedFieldMappings = currentTableMapping
+              ? [...currentTableMapping.fieldMappings, ...suggestions.filter(s =>
+                  !currentTableMapping.fieldMappings.some(fm => fm.id === s.id)
+                )]
+              : suggestions; // If no currentTableMapping, just use suggestions
+            
+            return {
+              mappingState: {
+                ...state.mappingState,
+                suggestions,
+                currentTableMapping: currentTableMapping ? {
+                  ...currentTableMapping,
+                  fieldMappings: updatedFieldMappings,
+                } : null, // If no currentTableMapping, keep it null
+              },
+            };
         });
       },
 
