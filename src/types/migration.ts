@@ -234,6 +234,8 @@ export interface CodeGenerationState {
   previewMode: 'code' | 'execution' | 'performance';
   error: string | null;
   completedAt: string | null;
+  originalCodeForComparison?: string;
+  optimizedCodeForComparison?: string;
 }
 
 // User Profile Types

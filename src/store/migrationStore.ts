@@ -86,6 +86,8 @@ interface MigrationState {
   setSelectedPlatform: (platform: CodePlatform) => void;
   setGeneratedCode: (platform: CodePlatform, code: GeneratedCode) => void;
   completeCodeGeneration: () => void;
+  setOriginalCodeForComparison: (code: string) => void;
+  setOptimizedCodeForComparison: (code: string) => void;
   
   // Project completion
   completeProject: () => void;
@@ -141,6 +143,8 @@ export const useMigrationStore = create<MigrationState>()(
       previewMode: 'code',
       error: null,
       completedAt: null,
+      originalCodeForComparison: '',
+      optimizedCodeForComparison: '',
     },
 
       setCurrentProject: (project) => {
@@ -581,6 +585,26 @@ export const useMigrationStore = create<MigrationState>()(
           completedAt: new Date().toISOString(),
         },
       })),
+
+      setOriginalCodeForComparison: (code) => {
+        console.log('Setting originalCodeForComparison:', code);
+        set((state) => ({
+          codeGenerationState: {
+            ...state.codeGenerationState,
+            originalCodeForComparison: code,
+          },
+        }));
+      },
+
+      setOptimizedCodeForComparison: (code) => {
+        console.log('Setting optimizedCodeForComparison:', code);
+        set((state) => ({
+          codeGenerationState: {
+            ...state.codeGenerationState,
+            optimizedCodeForComparison: code,
+          },
+        }));
+      },
 
       // Project completion
       completeProject: () => {
