@@ -10,15 +10,25 @@ import { getTransformationIcon, getConfidenceBadgeColor } from '@/data/mockMappi
 import { TransformationType } from '@/types/migration';
 import { cn } from '@/lib/utils';
 
-export function MappingCanvas() {
+interface MappingCanvasProps {
+  filterConfidence?: number;
+}
+
+export function MappingCanvas({ filterConfidence = 0 }: MappingCanvasProps) {
   const { mappingState, discoveryState, updateFieldMapping, removeFieldMapping } = useMigrationStore();
 
   const currentMappings = useMemo(() => {
     if (!mappingState.currentTableMapping) return [];
-    return mappingState.currentTableMapping.fieldMappings.filter(fm => 
+    
+    const allFieldMappings = mappingState.currentTableMapping.fieldMappings.filter(fm =>
       fm.status === 'approved' || fm.status === 'suggested'
     );
-  }, [mappingState.currentTableMapping]);
+
+    if (filterConfidence > 0) {
+      return allFieldMappings.filter(fm => fm.confidence >= filterConfidence);
+    }
+    return allFieldMappings;
+  }, [mappingState.currentTableMapping, filterConfidence]);
 
   const getSourceColumn = (sourceTableId: string, sourceColumnId: string) => {
     if (!discoveryState.lineageGraph) return null;
@@ -87,7 +97,9 @@ export function MappingCanvas() {
                 <Code className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                 <h3 className="text-lg font-semibold mb-2">No Mappings Yet</h3>
                 <p className="text-muted-foreground mb-4">
-                  Generate AI suggestions or create manual mappings to get started
+                  {filterConfidence > 0
+                    ? `No mappings with ${filterConfidence}% or more confidence.`
+                    : "Generate AI suggestions or create manual mappings to get started"}
                 </p>
               </div>
             ) : (
