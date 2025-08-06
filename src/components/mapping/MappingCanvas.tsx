@@ -17,7 +17,7 @@ interface MappingCanvasProps {
   minCompleteness?: number;
 }
 
-export function MappingCanvas({ tableMappings, minCompleteness = 90 }: MappingCanvasProps) {
+export function MappingCanvas({ tableMappings, minCompleteness = 0 }: MappingCanvasProps) {
   const { discoveryState, updateFieldMapping, removeFieldMapping } = useMigrationStore();
 
   const currentMappings = useMemo(() => {
@@ -26,9 +26,9 @@ export function MappingCanvas({ tableMappings, minCompleteness = 90 }: MappingCa
         fm.status === 'approved' || fm.status === 'suggested' || fm.status === 'rejected'
       )
     );
-
-    return allFieldMappings.filter(fm => fm.confidence >= minCompleteness);
-  }, [tableMappings, minCompleteness]);
+    // Always return all mappings, as per new requirement for Field Mappings panel
+    return allFieldMappings;
+  }, [tableMappings]);
 
   const getSourceColumn = (sourceTableId: string, sourceColumnId: string) => {
     if (!discoveryState.lineageGraph) return null;
@@ -70,7 +70,7 @@ export function MappingCanvas({ tableMappings, minCompleteness = 90 }: MappingCa
           Field Mappings
         </CardTitle>
         <div className="text-sm text-muted-foreground">
-          Displaying field mappings for tables with &ge; {minCompleteness}% completeness.
+          Displaying all field mappings.
         </div>
       </CardHeader>
 
@@ -82,9 +82,7 @@ export function MappingCanvas({ tableMappings, minCompleteness = 90 }: MappingCa
                 <Code className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                 <h3 className="text-lg font-semibold mb-2">No Mappings Yet</h3>
                 <p className="text-muted-foreground mb-4">
-                  {minCompleteness > 0
-                    ? `No mappings with ${minCompleteness}% or more completeness.`
-                    : "Generate AI suggestions or create manual mappings to get started"}
+                  Generate AI suggestions or create manual mappings to get started.
                 </p>
               </div>
             ) : (

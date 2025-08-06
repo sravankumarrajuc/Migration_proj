@@ -27,6 +27,7 @@ export function Mapping() {
     startMapping,
     updateMappingProgress,
     setTableMapping,
+    setSelectedTables, // Added this
     generateAISuggestions,
     acceptMapping,
     completeMapping,
@@ -35,7 +36,6 @@ export function Mapping() {
 
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [showReview, setShowReview] = useState(false);
-  const [filterMappings, setFilterMappings] = useState(true); // Controls filtering for MappingCanvas and AISuggestionsPanel
 
   useEffect(() => {
     if (currentPhase !== 'mapping') {
@@ -45,22 +45,20 @@ export function Mapping() {
 
   useEffect(() => {
     // Initialize with mock data if available
-    const filteredMockTableMappings = mockTableMappings.filter(m => m.completionPercentage >= 90);
-
-    if (filteredMockTableMappings.length > 0 && mappingState.allMappings.length === 0) {
+    if (mockTableMappings.length > 0 && mappingState.allMappings.length === 0) {
       // Add all mock mappings to the store
-      filteredMockTableMappings.forEach(mapping => {
+      mockTableMappings.forEach(mapping => {
         setTableMapping(mapping);
       });
-      
+      // Set selected tables for the button to be enabled
+      // Using 'DB2_CUSTOMERS' and 'customers_denorm' as they have field mappings with varying confidence
+      setSelectedTables('DB2_CUSTOMERS', 'customers_denorm');
     }
-  }, [mappingState.allMappings.length, setTableMapping]);
+  }, [mappingState.allMappings.length, setTableMapping, setSelectedTables]);
 
   const handleGenerateAISuggestions = async () => {
-
     startMapping();
     setShowSuggestions(true);
-    setFilterMappings(false); // Show all mappings and suggestions after generating
 
     // Simulate AI processing
     const steps = [
@@ -100,15 +98,16 @@ export function Mapping() {
     navigate(`/codegen/${projectId}`);
   };
 
-  const filteredTableMappings = mockTableMappings.filter(m => m.completionPercentage >= 90);
-
-  const availableTablePairs = filteredTableMappings.map(m => ({
+  const availableTablePairs = mappingState.allMappings.map(m => ({
     source: m.sourceTableId,
     target: m.targetTableId,
     label: `${m.sourceTableId} → ${m.targetTableId}`
   }));
 
-  const overallProgress = filteredTableMappings.reduce((sum, m) => sum + m.completionPercentage, 0) / filteredTableMappings.length;
+  // Calculate overall progress based on all mappings in the store
+  const overallProgress = mappingState.allMappings.length > 0
+    ? mappingState.allMappings.reduce((sum, m) => sum + m.completionPercentage, 0) / mappingState.allMappings.length
+    : 0;
 
   if (!currentProject || !discoveryState.lineageGraph) {
     return (
@@ -207,7 +206,10 @@ export function Mapping() {
 
             {/* Mapping Canvas */}
             <ResizablePanel defaultSize={40} minSize={30}>
-              <MappingCanvas tableMappings={filteredTableMappings} minCompleteness={90} />
+              <MappingCanvas
+                tableMappings={mappingState.allMappings} // Pass mappings from store
+                minCompleteness={0} // Always show all mappings in canvas
+              />
             </ResizablePanel>
 
             <ResizableHandle withHandle />
@@ -217,7 +219,7 @@ export function Mapping() {
               {showSuggestions ? (
                 <AISuggestionsPanel
                   onClose={() => setShowSuggestions(false)}
-                  minCompleteness={filterMappings ? 90 : 0} // Pass filter prop
+                  minCompleteness={0} // Always pass 0 to show all suggestions for internal filtering
                 />
               ) : (
                 <TargetSchemaPanel />

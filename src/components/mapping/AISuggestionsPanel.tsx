@@ -10,7 +10,7 @@ import { cn } from '@/lib/utils';
 
 interface AISuggestionsPanelProps {
   onClose: () => void;
-  minCompleteness?: number; // New prop for filtering suggestions
+  minCompleteness?: number; // Prop for filtering suggestions (now always 0)
 }
 
 export function AISuggestionsPanel({ onClose, minCompleteness = 0 }: AISuggestionsPanelProps) {
@@ -21,9 +21,8 @@ export function AISuggestionsPanel({ onClose, minCompleteness = 0 }: AISuggestio
     bulkAcceptHighConfidence
   } = useMigrationStore();
 
-  const filteredSuggestions = minCompleteness > 0
-    ? mappingState.suggestions.filter(s => s.confidence >= minCompleteness)
-    : mappingState.suggestions;
+  // AISuggestionsPanel should always receive all suggestions and categorize them internally
+  const filteredSuggestions = mappingState.suggestions;
 
   const highConfidenceSuggestions = filteredSuggestions.filter(s => s.confidence >= 90);
   const mediumConfidenceSuggestions = filteredSuggestions.filter(s => s.confidence >= 70 && s.confidence < 90);
@@ -196,9 +195,7 @@ export function AISuggestionsPanel({ onClose, minCompleteness = 0 }: AISuggestio
                 <Sparkles className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                 <h3 className="text-lg font-semibold mb-2">No Suggestions Available</h3>
                 <p className="text-muted-foreground">
-                  {minCompleteness > 0
-                    ? `No suggestions with ${minCompleteness}% or more completeness.`
-                    : "Generate AI suggestions to see mapping recommendations"}
+                  Generate AI suggestions to see mapping recommendations.
                 </p>
               </div>
             ) : (
