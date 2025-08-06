@@ -4,6 +4,7 @@ import { ArrowLeft, Download, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useMigrationStore } from '@/store/migrationStore';
+import { SchemaComparisonTable } from '@/components/validation/SchemaComparisonTable';
 
 export function Validation() {
   const { projectId } = useParams();
@@ -87,7 +88,7 @@ export function Validation() {
         {/* Validation Placeholder Content */}
         <div className="space-y-6">
           {/* Header Cards Placeholder */}
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
             <Card>
               <CardHeader className="pb-2">
                 <CardDescription>Tables Compared</CardDescription>
@@ -102,20 +103,8 @@ export function Validation() {
             </Card>
             <Card>
               <CardHeader className="pb-2">
-                <CardDescription>Anomalies Detected</CardDescription>
-                <CardTitle className="text-2xl">0</CardTitle>
-              </CardHeader>
-            </Card>
-            <Card>
-              <CardHeader className="pb-2">
                 <CardDescription>Schema Accuracy</CardDescription>
-                <CardTitle className="text-2xl">100 %</CardTitle>
-              </CardHeader>
-            </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardDescription>Tolerance</CardDescription>
-                <CardTitle className="text-2xl">1.0 %</CardTitle>
+                <CardTitle className="text-2xl">78 %</CardTitle>
               </CardHeader>
             </Card>
           </div>
@@ -148,6 +137,11 @@ export function Validation() {
             >
               Complete Migration
             </Button>
+          </div>
+
+          <div className="mt-8">
+            <h2 className="text-2xl font-bold mb-4">Schema Comparison</h2>
+            <SchemaComparisonTable />
           </div>
 
           {/* Completion Workflow Modal (Keep, but it will be disabled by the button above) */}

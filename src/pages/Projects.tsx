@@ -32,9 +32,28 @@ export default function Projects() {
   // Load projects on component mount and refresh
   useEffect(() => {
     const loadProjects = async () => {
-      // Import mockProjects dynamically to get fresh data including completed projects
       const { mockProjects } = await import('@/data/mockProjects');
-      setProjects(mockProjects);
+      
+      let storedProjects: Project[] = [];
+      if (typeof window !== 'undefined') {
+        const stored = localStorage.getItem('completed-projects');
+        if (stored) {
+          storedProjects = JSON.parse(stored);
+        }
+      }
+
+      // Merge mock projects with stored projects, giving precedence to stored projects
+      const mergedProjects = mockProjects.map(mockProject => {
+        const storedProject = storedProjects.find(sp => sp.id === mockProject.id);
+        return storedProject || mockProject;
+      });
+
+      // Add any new projects that are only in localStorage (e.g., newly created ones)
+      const newOnlyInStorage = storedProjects.filter(
+        storedProject => !mockProjects.some(mockProject => mockProject.id === storedProject.id)
+      );
+
+      setProjects([...mergedProjects, ...newOnlyInStorage]);
     };
     loadProjects();
   }, []);

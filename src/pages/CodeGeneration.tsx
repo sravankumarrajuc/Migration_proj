@@ -31,7 +31,7 @@ export function CodeGeneration() {
     setOptimizedCodeForComparison
   } = useMigrationStore();
 
-  const [showOptimizer, setShowOptimizer] = useState(true); // Set to true for debugging
+  const [showOptimizer, setShowOptimizer] = useState(false);
   const [showExportOptions, setShowExportOptions] = useState(false);
 
   const currentCode = codeGenerationState.generatedCodes[codeGenerationState.selectedPlatform];
