@@ -14,7 +14,13 @@ import {
   GeneratedCode,
   UserProfile
 } from '@/types/migration';
-import { customerMappings, claimsMappings } from '@/data/mockMappingData.ts';
+import {
+  customerMappings,
+  claimsMappings,
+  policiesMappings,
+  agentsMappings,
+  riskRatingsMappings
+} from '@/data/mockMappingData.ts';
 
 interface MigrationState {
   // Current project context
@@ -459,9 +465,14 @@ export const useMigrationStore = create<MigrationState>()(
       generateAISuggestions: () => {
         const { mappingState } = get();
         // Simulate AI suggestion generation with mock data
-        const suggestions = mappingState.selectedSourceTable === 'customers'
-            ? customerMappings
-            : claimsMappings; // Assuming 'orders' maps to 'claims' for mock data
+        // Combine all mock mappings to ensure a variety of confidence levels for demonstration
+        const suggestions = [
+          ...customerMappings,
+          ...claimsMappings,
+          ...policiesMappings,
+          ...agentsMappings,
+          ...riskRatingsMappings,
+        ];
           
         set((state) => {
             const currentTableMapping = state.mappingState.currentTableMapping;

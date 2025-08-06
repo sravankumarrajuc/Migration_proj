@@ -106,7 +106,7 @@ export const claimsMappings: FieldMapping[] = [
 ];
 
 // Mappings for DB2_POLICIES and related tables -> policies_denorm
-const policiesMappings: FieldMapping[] = [
+export const policiesMappings: FieldMapping[] = [
     { id: 'map-policies-1', sourceTableId: 'DB2_POLICIES', sourceColumnId: 'POLICY_ID', targetTableId: 'policies_denorm', targetColumnId: 'policy_key', transformationType: 'direct', confidence: 95, status: 'suggested', description: 'Direct map of policy ID.', createdAt: now },
     { id: 'map-policies-2', sourceTableId: 'DB2_POLICIES', sourceColumnId: 'EFF_DT', targetTableId: 'policies_denorm', targetColumnId: 'effective_on', transformationType: 'direct', confidence: 90, status: 'suggested', description: 'Direct map of effective date.', createdAt: now },
     { id: 'map-policies-3', sourceTableId: 'DB2_POLICIES', sourceColumnId: 'EXP_DT', targetTableId: 'policies_denorm', targetColumnId: 'expires_on', transformationType: 'direct', confidence: 90, status: 'suggested', description: 'Direct map of expiration date.', createdAt: now },
@@ -121,7 +121,7 @@ const policiesMappings: FieldMapping[] = [
 ];
 
 // Mappings for DB2_AGENTS and related tables -> agents_denorm
-const agentsMappings: FieldMapping[] = [
+export const agentsMappings: FieldMapping[] = [
     { id: 'map-agents-1', sourceTableId: 'DB2_AGENTS', sourceColumnId: 'AGENT_ID', targetTableId: 'agents_denorm', targetColumnId: 'agent_key', transformationType: 'direct', confidence: 95, status: 'suggested', description: 'Direct map of agent ID.', createdAt: now },
     { id: 'map-agents-2', sourceTableId: 'DB2_AGENTS', sourceColumnId: 'FIRST_NAME', targetTableId: 'agents_denorm', targetColumnId: 'first_name', transformationType: 'direct', confidence: 95, status: 'suggested', description: 'Direct map of first name.', createdAt: now },
     { id: 'map-agents-3', sourceTableId: 'DB2_AGENTS', sourceColumnId: 'LAST_NAME', targetTableId: 'agents_denorm', targetColumnId: 'last_name', transformationType: 'direct', confidence: 95, status: 'suggested', description: 'Direct map of last name.', createdAt: now },
@@ -135,7 +135,7 @@ const agentsMappings: FieldMapping[] = [
 ];
 
 // Mappings for DB2_RISK_RATINGS -> risk_ratings_denorm
-const riskRatingsMappings: FieldMapping[] = [
+export const riskRatingsMappings: FieldMapping[] = [
     { id: 'map-risk-1', sourceTableId: 'DB2_RISK_RATINGS', sourceColumnId: 'RATING_KEY', targetTableId: 'risk_ratings_denorm', targetColumnId: 'rating_id', transformationType: 'direct', confidence: 95, status: 'suggested', description: 'Direct map of rating key.', createdAt: now },
     { id: 'map-risk-2', sourceTableId: 'DB2_RISK_RATINGS', sourceColumnId: 'ZIP', targetTableId: 'risk_ratings_denorm', targetColumnId: 'zip_code', transformationType: 'cast', formula: 'CAST(ZIP AS STRING)', confidence: 95, status: 'suggested', description: 'Cast zip to STRING.', createdAt: now },
     { id: 'map-risk-3', sourceTableId: 'DB2_RISK_RATINGS', sourceColumnId: 'POL_TYPE', targetTableId: 'risk_ratings_denorm', targetColumnId: 'product_category', transformationType: 'direct', confidence: 90, status: 'suggested', description: 'Direct map of policy type.', createdAt: now },
