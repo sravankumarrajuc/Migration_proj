@@ -31,14 +31,14 @@ export function AISuggestionsPanel({ onClose, filterConfidence = 0 }: AISuggesti
 
   const getSourceColumn = (sourceTableId: string, sourceColumnId: string) => {
     if (!discoveryState.lineageGraph) return null;
-    const table = discoveryState.lineageGraph.tables.find(t => t.id === sourceTableId);
-    return table?.columns.find(c => c.id === sourceColumnId) || null;
+    const table = discoveryState.lineageGraph.tables.find(t => t.name === sourceTableId);
+    return table?.columns.find(c => c.name === sourceColumnId) || null;
   };
 
   const getTargetColumn = (targetTableId: string, targetColumnId: string) => {
     if (!discoveryState.lineageGraph) return null;
-    const table = discoveryState.lineageGraph.tables.find(t => t.id === targetTableId);
-    return table?.columns.find(c => c.id === targetColumnId) || null;
+    const table = discoveryState.lineageGraph.tables.find(t => t.name === targetTableId);
+    return table?.columns.find(c => c.name === targetColumnId) || null;
   };
 
   const handleAccept = (mappingId: string) => {
@@ -79,8 +79,10 @@ export function AISuggestionsPanel({ onClose, filterConfidence = 0 }: AISuggesti
                 "border rounded-lg p-3 space-y-2 transition-colors",
                 isProcessed 
                   ? suggestion.status === 'approved'
-                    ? "border-green-200 bg-green-50" 
-                    : "border-gray-200 bg-gray-50"
+                    ? "border-green-200 bg-green-50"
+                    : suggestion.status === 'rejected'
+                      ? "border-red-200 bg-red-50"
+                      : "border-gray-200 bg-gray-50"
                   : "border-border hover:bg-muted/50"
               )}
             >
@@ -143,6 +145,14 @@ export function AISuggestionsPanel({ onClose, filterConfidence = 0 }: AISuggesti
                     <X className="h-3 w-3" />
                     Reject
                   </Button>
+                  {suggestion.status === 'rejected' && (
+                    <Button
+                      size="sm"
+                      onClick={() => updateFieldMapping(suggestion.id, { status: 'suggested' })}
+                    >
+                      Revert Reject
+                    </Button>
+                  )}
                 </div>
             </div>
           );
