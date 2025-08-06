@@ -21,6 +21,7 @@ import {
   agentsMappings,
   riskRatingsMappings
 } from '@/data/mockMappingData.ts';
+import { projectTemplates } from '@/data/mockProjects';
 
 interface MigrationState {
   // Current project context
@@ -96,8 +97,37 @@ interface MigrationState {
 export const useMigrationStore = create<MigrationState>()(
   persist(
     (set, get) => ({
-      currentProject: null,
-      currentPhase: 'upload',
+      currentProject: (() => {
+        const defaultProjectTemplate = projectTemplates.find(
+          (template) => template.name === 'DB2 to BigQuery Enterprise'
+        );
+        return defaultProjectTemplate
+          ? {
+              id: `proj-${defaultProjectTemplate.id}`,
+              name: defaultProjectTemplate.name,
+              description: defaultProjectTemplate.description,
+              sourceDialect: defaultProjectTemplate.sourceDialect,
+              targetDialect: defaultProjectTemplate.targetDialect,
+              status: 'completed', // Assuming it's completed as per the screenshot
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+              progress: {
+                currentPhase: 'validation', // Assuming validation phase as per the screenshot
+                completedPhases: ['upload', 'discovery', 'mapping', 'codegen', 'validation'],
+                schemasUploaded: true,
+                mappingsComplete: true,
+                codeGenerated: true,
+                validationComplete: true,
+              },
+            }
+          : null;
+      })(),
+      currentPhase: (() => {
+        const defaultProjectTemplate = projectTemplates.find(
+          (template) => template.name === 'DB2 to BigQuery Enterprise'
+        );
+        return defaultProjectTemplate ? 'validation' : 'upload';
+      })(),
       userProfile: {
         id: '',
         name: 'Alex Chen',
@@ -652,10 +682,40 @@ export const useMigrationStore = create<MigrationState>()(
     {
       name: 'migration-store',
       partialize: (state) => ({
-        currentProject: state.currentProject,
+        currentProject: state.currentProject || undefined, // Don't persist if null
         currentPhase: state.currentPhase,
         userProfile: state.userProfile, // Persist user profile
       }),
+      onRehydrateStorage: (state) => {
+        // This function runs before rehydration
+        // If currentProject is null after rehydration, set the default
+        if (state && state.currentProject === null) {
+          const defaultProjectTemplate = projectTemplates.find(
+            (template) => template.name === 'DB2 to BigQuery Enterprise'
+          );
+          if (defaultProjectTemplate) {
+            state.currentProject = {
+              id: `proj-${defaultProjectTemplate.id}`,
+              name: defaultProjectTemplate.name,
+              description: defaultProjectTemplate.description,
+              sourceDialect: defaultProjectTemplate.sourceDialect,
+              targetDialect: defaultProjectTemplate.targetDialect,
+              status: 'completed',
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+              progress: {
+                currentPhase: 'validation',
+                completedPhases: ['upload', 'discovery', 'mapping', 'codegen', 'validation'],
+                schemasUploaded: true,
+                mappingsComplete: true,
+                codeGenerated: true,
+                validationComplete: true,
+              },
+            };
+            state.currentPhase = 'validation';
+          }
+        }
+      },
     }
   )
 );
