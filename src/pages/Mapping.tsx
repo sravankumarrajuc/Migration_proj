@@ -36,6 +36,7 @@ export function Mapping() {
 
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [showReview, setShowReview] = useState(false);
+  const [filterMappings, setFilterMappings] = useState(true); // Controls filtering for MappingCanvas and AISuggestionsPanel
 
   useEffect(() => {
     if (currentPhase !== 'mapping') {
@@ -62,6 +63,7 @@ export function Mapping() {
 
     startMapping();
     setShowSuggestions(true);
+    setFilterMappings(false); // Show all mappings and suggestions after generating
 
     // Simulate AI processing
     const steps = [
@@ -149,18 +151,37 @@ export function Mapping() {
               </p>
             </div>
             <div className="flex items-center gap-4">
-              <Badge variant="outline" className="gap-2">
-                <CheckCircle className="h-4 w-4" />
-                {Math.round(overallProgress)}% Complete
-              </Badge>
               <Button
-                onClick={handleProceedToCodeGeneration}
-                disabled={!canProceedToNextPhase()}
+                onClick={handleGenerateAISuggestions}
+                disabled={mappingState.isProcessing || !mappingState.selectedSourceTable}
+                variant="outline"
                 className="gap-2"
               >
-                Proceed to Code Generation
-                <ArrowRight className="h-4 w-4" />
+                {mappingState.isProcessing ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : null}
+                Generate AI Suggestions
               </Button>
+              <Button
+                onClick={() => setShowReview(!showReview)}
+                variant="outline"
+              >
+                {showReview ? 'Hide Review' : 'Show Review'}
+              </Button>
+              <div className="flex items-center gap-4">
+                <Badge variant="outline" className="gap-2">
+                  <CheckCircle className="h-4 w-4" />
+                  {Math.round(overallProgress)}% Complete
+                </Badge>
+                <Button
+                  onClick={handleProceedToCodeGeneration}
+                  disabled={!canProceedToNextPhase()}
+                  className="gap-2"
+                >
+                  Proceed to Code Generation
+                  <ArrowRight className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
           </div>
 
@@ -174,7 +195,7 @@ export function Mapping() {
                   handleTableSelection(source, target);
                 }}
               >
-                <SelectTrigger>
+                <SelectTrigger className="hidden">
                   <SelectValue placeholder="Select table mapping..." />
                 </SelectTrigger>
                 <SelectContent>
@@ -186,23 +207,6 @@ export function Mapping() {
                 </SelectContent>
               </Select>
             </div>
-            <Button
-              onClick={handleGenerateAISuggestions}
-              disabled={mappingState.isProcessing || !mappingState.selectedSourceTable}
-              variant="outline"
-              className="gap-2"
-            >
-              {mappingState.isProcessing ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : null}
-              Generate AI Suggestions
-            </Button>
-            <Button
-              onClick={() => setShowReview(!showReview)}
-              variant="outline"
-            >
-              {showReview ? 'Hide Review' : 'Show Review'}
-            </Button>
           </div>
 
           {/* Progress */}
@@ -210,7 +214,7 @@ export function Mapping() {
             <div className="mb-4">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm font-medium">{mappingState.currentStep}</span>
-                <span className="text-sm text-muted-foreground">{mappingState.progress}%</span>
+                <span className="text-sm text-muted-foreground">{Math.round(mappingState.progress)}%</span>
               </div>
               <Progress value={mappingState.progress} className="h-2" />
             </div>
@@ -235,7 +239,7 @@ export function Mapping() {
 
             {/* Mapping Canvas */}
             <ResizablePanel defaultSize={40} minSize={30}>
-              <MappingCanvas />
+              <MappingCanvas filterConfidence={filterMappings ? 90 : 0} />
             </ResizablePanel>
 
             <ResizableHandle withHandle />
@@ -243,7 +247,10 @@ export function Mapping() {
             {/* Target Schema / AI Suggestions Panel */}
             <ResizablePanel defaultSize={30} minSize={25}>
               {showSuggestions ? (
-                <AISuggestionsPanel onClose={() => setShowSuggestions(false)} />
+                <AISuggestionsPanel
+                  onClose={() => setShowSuggestions(false)}
+                  filterConfidence={filterMappings ? 90 : 0} // Pass filter prop
+                />
               ) : (
                 <TargetSchemaPanel />
               )}

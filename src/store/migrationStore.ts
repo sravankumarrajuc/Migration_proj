@@ -14,7 +14,7 @@ import {
   GeneratedCode,
   UserProfile
 } from '@/types/migration';
-import { customerMappings, claimsMappings } from '@/data/mockMappingData';
+import { customerMappings, claimsMappings } from '@/data/mockMappingData.ts';
 
 interface MigrationState {
   // Current project context
@@ -505,19 +505,9 @@ export const useMigrationStore = create<MigrationState>()(
         set((state) => {
           console.log('Completing mapping phase');
           
-          // Auto-approve high confidence suggestions if they exist
-          const updatedSuggestions = state.mappingState.suggestions.map(suggestion => 
-            (suggestion.status === undefined || suggestion.status === 'suggested') && suggestion.confidence >= 80 
-              ? { ...suggestion, status: 'approved' as const, approvedAt: new Date().toISOString() }
-              : suggestion
-          );
-          
-          console.log('Auto-approved suggestions:', updatedSuggestions.filter(s => s.status === 'approved'));
-          
           return {
             mappingState: {
               ...state.mappingState,
-              suggestions: updatedSuggestions,
               isProcessing: false,
               progress: 100,
               currentStep: 'Mapping complete',

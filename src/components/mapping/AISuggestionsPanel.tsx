@@ -5,25 +5,29 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Sparkles, Check, X, CheckCircle2, ArrowRight, Zap } from 'lucide-react';
-import { getConfidenceBadgeColor, getTransformationIcon } from '@/data/mockMappingData';
+import { getConfidenceBadgeColor, getTransformationIcon } from '@/data/mockMappingData.ts';
 import { cn } from '@/lib/utils';
 
 interface AISuggestionsPanelProps {
   onClose: () => void;
+  filterConfidence?: number; // New prop for filtering suggestions
 }
 
-export function AISuggestionsPanel({ onClose }: AISuggestionsPanelProps) {
-  const { 
-    mappingState, 
+export function AISuggestionsPanel({ onClose, filterConfidence = 0 }: AISuggestionsPanelProps) {
+  const {
+    mappingState,
     discoveryState,
-    updateFieldMapping, 
-    bulkAcceptHighConfidence 
+    updateFieldMapping,
+    bulkAcceptHighConfidence
   } = useMigrationStore();
 
-  const suggestions = mappingState.suggestions;
-  const highConfidenceSuggestions = suggestions.filter(s => s.confidence >= 90);
-  const mediumConfidenceSuggestions = suggestions.filter(s => s.confidence >= 70 && s.confidence < 90);
-  const lowConfidenceSuggestions = suggestions.filter(s => s.confidence < 70);
+  const filteredSuggestions = filterConfidence > 0
+    ? mappingState.suggestions.filter(s => s.confidence >= filterConfidence)
+    : mappingState.suggestions;
+
+  const highConfidenceSuggestions = filteredSuggestions.filter(s => s.confidence >= 90);
+  const mediumConfidenceSuggestions = filteredSuggestions.filter(s => s.confidence >= 70 && s.confidence < 90);
+  const lowConfidenceSuggestions = filteredSuggestions.filter(s => s.confidence < 70);
 
   const getSourceColumn = (sourceTableId: string, sourceColumnId: string) => {
     if (!discoveryState.lineageGraph) return null;
@@ -86,7 +90,7 @@ export function AISuggestionsPanel({ onClose }: AISuggestionsPanelProps) {
                 </Badge>
                 <div className="flex items-center gap-2">
                   <span className="text-lg">{getTransformationIcon(suggestion.transformationType)}</span>
-                  {isProcessed && (
+                  {suggestion.status !== 'suggested' && (
                     <Badge variant={suggestion.status === 'approved' ? 'default' : 'secondary'}>
                       {suggestion.status === 'approved' ? 'Approved' : 'Rejected'}
                     </Badge>
@@ -118,27 +122,28 @@ export function AISuggestionsPanel({ onClose }: AISuggestionsPanelProps) {
                 </div>
               )}
 
-              {!isProcessed && (
                 <div className="flex items-center gap-2 pt-2">
                   <Button
                     size="sm"
                     onClick={() => handleAccept(suggestion.id)}
                     className="gap-1"
+                    variant={suggestion.status === 'approved' ? 'default' : 'outline'}
+                    disabled={suggestion.status === 'approved' || suggestion.status === 'rejected'}
                   >
                     <Check className="h-3 w-3" />
-                    Accept
+                    Approve
                   </Button>
                   <Button
                     size="sm"
-                    variant="outline"
                     onClick={() => handleReject(suggestion.id)}
                     className="gap-1"
+                    variant={suggestion.status === 'rejected' ? 'destructive' : 'outline'}
+                    disabled={suggestion.status === 'approved' || suggestion.status === 'rejected'}
                   >
                     <X className="h-3 w-3" />
                     Reject
                   </Button>
                 </div>
-              )}
             </div>
           );
         })}
@@ -176,12 +181,14 @@ export function AISuggestionsPanel({ onClose }: AISuggestionsPanelProps) {
       <CardContent className="flex-1 overflow-hidden p-0">
         <ScrollArea className="h-full">
           <div className="p-4 space-y-6">
-            {suggestions.length === 0 ? (
+            {filteredSuggestions.length === 0 ? (
               <div className="text-center py-8">
                 <Sparkles className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                 <h3 className="text-lg font-semibold mb-2">No Suggestions Available</h3>
                 <p className="text-muted-foreground">
-                  Generate AI suggestions to see mapping recommendations
+                  {filterConfidence > 0
+                    ? `No suggestions with ${filterConfidence}% or more confidence.`
+                    : "Generate AI suggestions to see mapping recommendations"}
                 </p>
               </div>
             ) : (
