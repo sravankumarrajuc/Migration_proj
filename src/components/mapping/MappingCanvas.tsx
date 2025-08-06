@@ -14,20 +14,18 @@ import { TableMapping } from '@/types/migration'; // Add this import
 
 interface MappingCanvasProps {
   tableMappings: TableMapping[];
-  minCompleteness?: number;
+  showAllText: boolean; // New prop to control the "Displaying all field mappings." text
 }
 
-export function MappingCanvas({ tableMappings, minCompleteness = 0 }: MappingCanvasProps) {
+export function MappingCanvas({ tableMappings, showAllText }: MappingCanvasProps) {
   const { discoveryState, updateFieldMapping, removeFieldMapping } = useMigrationStore();
 
   const currentMappings = useMemo(() => {
-    const allFieldMappings = tableMappings.flatMap(tableMapping =>
+    return tableMappings.flatMap(tableMapping =>
       tableMapping.fieldMappings.filter(fm =>
         fm.status === 'approved' || fm.status === 'suggested' || fm.status === 'rejected'
       )
     );
-    // Always return all mappings, as per new requirement for Field Mappings panel
-    return allFieldMappings;
   }, [tableMappings]);
 
   const getSourceColumn = (sourceTableId: string, sourceColumnId: string) => {
@@ -69,9 +67,11 @@ export function MappingCanvas({ tableMappings, minCompleteness = 0 }: MappingCan
           <ArrowRight className="h-5 w-5" />
           Field Mappings
         </CardTitle>
-        <div className="text-sm text-muted-foreground">
-          Displaying all field mappings.
-        </div>
+        {showAllText && (
+          <div className="text-sm text-muted-foreground">
+            Displaying all field mappings.
+          </div>
+        )}
       </CardHeader>
 
       <CardContent className="flex-1 overflow-hidden p-0">

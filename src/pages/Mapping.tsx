@@ -36,6 +36,8 @@ export function Mapping() {
 
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [showReview, setShowReview] = useState(false);
+  const [showAllFieldMappings, setShowAllFieldMappings] = useState(false); // New state for AI Suggestions panel visibility
+  const [displayAllCanvasMappings, setDisplayAllCanvasMappings] = useState(false); // New state for Mapping Canvas visibility
 
   useEffect(() => {
     if (currentPhase !== 'mapping') {
@@ -59,6 +61,8 @@ export function Mapping() {
   const handleGenerateAISuggestions = async () => {
     startMapping();
     setShowSuggestions(true);
+    setShowAllFieldMappings(true); // Show all suggestions in AI Suggestions panel after generating suggestions
+    setDisplayAllCanvasMappings(true); // Show all mappings in Mapping Canvas after generating suggestions
 
     // Simulate AI processing
     const steps = [
@@ -207,8 +211,14 @@ export function Mapping() {
             {/* Mapping Canvas */}
             <ResizablePanel defaultSize={40} minSize={30}>
               <MappingCanvas
-                tableMappings={mappingState.allMappings} // Pass mappings from store
-                minCompleteness={0} // Always show all mappings in canvas
+                tableMappings={displayAllCanvasMappings
+                  ? mappingState.allMappings
+                  : mappingState.allMappings.map(tableMapping => ({
+                      ...tableMapping,
+                      fieldMappings: tableMapping.fieldMappings.filter(fm => fm.confidence >= 90)
+                    }))
+                } // Conditionally pass mappings
+                showAllText={displayAllCanvasMappings} // Pass the new state for text visibility
               />
             </ResizablePanel>
 
@@ -219,7 +229,7 @@ export function Mapping() {
               {showSuggestions ? (
                 <AISuggestionsPanel
                   onClose={() => setShowSuggestions(false)}
-                  minCompleteness={0} // Always pass 0 to show all suggestions for internal filtering
+                  showAllSuggestions={showAllFieldMappings} // Pass the new state
                 />
               ) : (
                 <TargetSchemaPanel />
