@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
-import { ArrowRight, Zap, Link, Calculator, Code, Shuffle, Trash2 } from 'lucide-react';
+import { ArrowRight, Zap, Link, Calculator, Code, Shuffle, Trash2, Sparkles } from 'lucide-react';
 import { getTransformationIcon, getConfidenceBadgeColor } from '@/data/mockMappingData';
 import { TransformationType } from '@/types/migration';
 import { cn } from '@/lib/utils';
@@ -108,6 +108,7 @@ export function MappingCanvas({ tableMappings, showAllText }: MappingCanvasProps
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <Badge className={getConfidenceBadgeColor(mapping.confidence)}>
+                          {mapping.confidence < 90 && <Sparkles className="h-3 w-3 mr-1" />}
                           {mapping.confidence}% confidence
                         </Badge>
                         <Badge variant="outline" className={transformationDetails.color}>
