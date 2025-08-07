@@ -131,7 +131,7 @@ setOptimizedCode(optimized);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-6xl max-h-[90vh] overflow-hidden">
+      <DialogContent className="max-w-6xl max-h-[95vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Zap className="h-5 w-5 text-primary" />
@@ -142,7 +142,7 @@ setOptimizedCode(optimized);
           </DialogDescription>
         </DialogHeader>
 
-        <Tabs defaultValue="optimizations" className="h-[calc(90vh-120px)]">
+        <Tabs defaultValue="optimizations" className="h-full">
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="optimizations">Optimizations</TabsTrigger>
             <TabsTrigger value="preview">Preview</TabsTrigger>
@@ -291,17 +291,6 @@ setOptimizedCode(optimized);
             {selectedOptimizations.length > 0 && (
               <>Selected {selectedOptimizations.length} optimization{selectedOptimizations.length > 1 ? 's' : ''}</>
             )}
-          </div>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={() => onOpenChange(false)}>
-              Cancel
-            </Button>
-            <Button 
-              onClick={handleApplyChanges}
-              disabled={optimizedCode === code}
-            >
-              Apply Changes
-            </Button>
           </div>
         </div>
       </DialogContent>

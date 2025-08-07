@@ -45,60 +45,65 @@ export function StepIndicator({ currentPhase, completedPhases, className }: Step
   return (
     <div className={cn('w-full bg-card border-b', className)}>
       <div className="container mx-auto px-6 py-4">
-        <div className="flex items-center justify-center gap-x-4">
+        <div className="flex items-start justify-between w-full">
           {steps.map((step, index) => {
             const status = getStepStatus(step.id);
             const Icon = step.icon;
-            
+
             return (
-              <div key={step.id} className="flex flex-col items-center text-center">
-                <div
-                  className={cn(
-                    'flex h-10 w-10 items-center justify-center rounded-full border-2 transition-all duration-300',
-                    status === 'completed' &&
-                      'border-primary bg-primary text-primary-foreground shadow-glow',
-                    status === 'current' &&
-                      'border-primary bg-background text-primary shadow-enterprise',
-                    status === 'upcoming' &&
-                      'border-muted-foreground/30 bg-background text-muted-foreground'
-                  )}
-                >
-                  <Icon className="h-5 w-5" />
-                </div>
-                <div className="mt-2 min-w-0 flex-1">
-                  <p
+              <>
+                <div key={step.id} className="flex flex-col items-center text-center flex-shrink-0">
+                  <div
                     className={cn(
-                      'text-sm font-medium transition-colors',
-                      status === 'completed' && 'text-primary',
-                      status === 'current' && 'text-foreground',
-                      status === 'upcoming' && 'text-muted-foreground'
+                      'flex h-10 w-10 items-center justify-center rounded-full border-2 transition-all duration-300',
+                      status === 'completed' &&
+                        'border-primary bg-primary text-primary-foreground shadow-glow',
+                      status === 'current' &&
+                        'border-primary bg-background text-primary shadow-enterprise',
+                      status === 'upcoming' &&
+                        'border-muted-foreground/30 bg-background text-muted-foreground'
                     )}
                   >
-                    {step.name}
-                  </p>
-                  <p className="text-xs text-muted-foreground">{step.description}</p>
+                    <Icon className="h-5 w-5" />
+                  </div>
+                  <div className="mt-2 min-w-0">
+                    <p
+                      className={cn(
+                        'text-sm font-medium transition-colors',
+                        status === 'completed' && 'text-primary',
+                        status === 'current' && 'text-foreground',
+                        status === 'upcoming' && 'text-muted-foreground'
+                      )}
+                    >
+                      {step.name}
+                    </p>
+                    <p className="text-xs text-muted-foreground">{step.description}</p>
+                  </div>
                 </div>
                 {index < steps.length - 1 && (
-                  <div className="relative flex-1 h-0.5"> {/* This will be the line container */}
+                  <div className="flex-1 flex items-center justify-center h-px relative mx-4 mt-5">
                     <div
                       className={cn(
-                        'absolute inset-y-0 left-0 right-0 transition-colors', // Line itself
+                        'absolute inset-y-0 left-0 right-0 transition-colors h-0.5',
                         completedPhases.includes(step.id) ? 'bg-primary' : 'bg-border'
                       )}
                     />
                     <div className={cn(
-                      'absolute top-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2 flex items-center justify-center h-4 w-4 rounded-full border',
+                      'absolute top-1/2 -translate-y-1/2 flex items-center justify-center h-4 w-4 rounded-full border',
                       completedPhases.includes(step.id) ? 'border-primary bg-primary' : 'border-muted-foreground/30 bg-background'
                     )}>
-                      {completedPhases.includes(step.id) && <Check className="h-3 w-3 text-primary-foreground" />}
+                      {completedPhases.includes(step.id) ? (
+                        <Check className="h-3 w-3 text-primary-foreground" />
+                      ) : (
+                        <ArrowRight className={cn(
+                          'h-3 w-3 transition-colors',
+                          completedPhases.includes(step.id) ? 'text-primary-foreground' : 'text-muted-foreground'
+                        )} />
+                      )}
                     </div>
-                    <ArrowRight className={cn(
-                      'absolute top-1/2 -translate-y-1/2 right-0 h-4 w-4 transition-colors',
-                      completedPhases.includes(step.id) ? 'text-primary' : 'text-border'
-                    )} />
                   </div>
                 )}
-              </div>
+              </>
             );
           })}
         </div>

@@ -22,6 +22,7 @@ import {
   riskRatingsMappings
 } from '@/data/mockMappingData.ts';
 import { projectTemplates } from '@/data/mockProjects';
+import { mockGeneratedCodes } from '@/data/mockCodeGeneration';
 
 interface MigrationState {
   // Current project context

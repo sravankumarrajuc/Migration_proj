@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Download, RefreshCw, Upload, CheckCircle, Clock, Loader2 } from 'lucide-react';
+import { ArrowLeft, Download, RefreshCw, Upload, CheckCircle, Clock, Loader2, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { FileDropZone } from '@/components/upload/FileDropZone';
@@ -42,9 +42,7 @@ export function CodeGeneration() {
   const [selectedProject, setSelectedProject] = useState<string | undefined>(projectId);
   const [selectedProjectName, setSelectedProjectName] = useState<string | null>(null);
   const [sourceFiles, setSourceFiles] = useState<SchemaFile[]>([]);
-  const [targetFiles, setTargetFiles] = useState<SchemaFile[]>([]);
   const [sourceFileUploaded, setSourceFileUploaded] = useState(false);
-  const [targetFileUploaded, setTargetFileUploaded] = useState(false);
   const [codeGenerated, setCodeGenerated] = useState(false);
   const [isLoading, setIsLoading] = useState(false); // New state for button loading
 
@@ -52,33 +50,6 @@ export function CodeGeneration() {
   const isGenerating = codeGenerationState.isProcessing;
   const progress = codeGenerationState.progress;
 
-  useEffect(() => {
-    if (showOptimizer && currentCode) {
-      // Automatically select opt-1 and apply optimization for debugging
-      // This simulates clicking the "Optimize" button and selecting opt-1
-      // In a real scenario, this would be triggered by user interaction
-      const optimizationId = 'opt-1'; // Corresponds to "Add clustering keys for BigQuery"
-      const optimization = mockCodeOptimizations.find(opt => opt.id === optimizationId);
-      console.log('Applying optimization:', optimization);
-      if (optimization) {
-        // Simulate selecting the optimization
-        // This part is tricky as CodeOptimizer manages its own selectedOptimizations state.
-        // For now, we'll directly call handleOptimizeCode with the assumption that opt-1 is applied.
-        // A more robust solution would involve exposing a method from CodeOptimizer or
-        // managing selectedOptimizations in the parent component.
-        // For debugging, we'll assume the optimization is applied if the modal is open and code exists.
-        // This is a temporary measure to get the console logs.
-        // In a real app, you'd trigger the optimization via user interaction.
-        // For now, we'll just ensure the original and optimized codes are set in the store.
-        const optimized = currentCode.content.replace(
-          /CREATE OR REPLACE TABLE analytics\.claims_denorm AS\nSELECT/,
-          'CREATE OR REPLACE TABLE analytics.claims_denorm\nCLUSTER BY client_key\nAS\nSELECT'
-        );
-        setOriginalCodeForComparison(currentCode.content);
-        setOptimizedCodeForComparison(optimized);
-      }
-    }
-  }, [showOptimizer, currentCode, setOriginalCodeForComparison, setOptimizedCodeForComparison]);
 
   useEffect(() => {
     setCompletedProjects(getCompletedProjects().filter(p => p.status === 'completed'));
@@ -101,22 +72,6 @@ export function CodeGeneration() {
     });
   }, []);
 
-  const handleTargetFilesAdded = useCallback((acceptedFiles: File[]) => {
-    const newFiles: SchemaFile[] = acceptedFiles.map(file => ({
-      id: `${file.name}-${Date.now()}`, // Simple unique ID
-      name: file.name,
-      size: file.size,
-      type: file.type,
-      uploadedAt: new Date().toISOString(),
-      status: 'completed', // Assuming immediate completion for now
-      dialect: 'custom-json', // Placeholder, adjust as needed
-    }));
-    setTargetFiles(prev => {
-      const updatedFiles = [...prev, ...newFiles];
-      setTargetFileUploaded(updatedFiles.length > 0);
-      return updatedFiles;
-    });
-  }, []);
 
   const handleSourceFileRemove = useCallback((fileId: string) => {
     setSourceFiles(prev => {
@@ -126,13 +81,6 @@ export function CodeGeneration() {
     });
   }, []);
 
-  const handleTargetFileRemove = useCallback((fileId: string) => {
-    setTargetFiles(prev => {
-      const updatedFiles = prev.filter(file => file.id !== fileId);
-      setTargetFileUploaded(updatedFiles.length > 0);
-      return updatedFiles;
-    });
-  }, []);
 
   const handleGenerateCode = useCallback(async (platform: CodePlatform) => {
     startCodeGeneration(`Generating ${platform} code...`);
@@ -246,7 +194,7 @@ export function CodeGeneration() {
       <div className="container mx-auto px-4 py-8">
             {/* Header */}
             <div className="flex items-center justify-between mb-8">
-              <h1 className="text-3xl font-bold text-foreground">ETL Code Generation</h1>
+              <h1 className="text-3xl font-bold text-foreground">Report Code Migration</h1>
             </div>
 
             {/* Project Selection Dropdown */}
@@ -279,56 +227,58 @@ export function CodeGeneration() {
                   ))}
                 </SelectContent>
               </Select>
-              {selectedProjectName && currentProject && (
-                <div className="mt-2 text-sm text-muted-foreground">
-                  Selected Project: <span className="font-medium text-foreground">{selectedProjectName}</span>
-                  <br />
-                  Migration: {currentProject.sourceDialect.toUpperCase()} → {currentProject.targetDialect.toUpperCase()}
-                </div>
-              )}
             </div>
 
             {selectedProject && (
               <>
                 {/* File Uploads */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                  <Card>
+                <div className={`grid grid-cols-1 ${sourceFiles.length > 0 ? 'md:grid-cols-2' : ''} gap-6 mb-8`}>
+                  <Card className={`${sourceFiles.length === 0 ? 'md:col-span-2' : ''}`}>
                     <CardHeader>
-                      <CardTitle className="text-lg">Upload Source SQL File</CardTitle>
-                      <CardDescription>Drag and drop your source .sql file here, or click to select.</CardDescription>
+                      <CardTitle className="text-lg">Upload Source File</CardTitle>
+                      <CardDescription>Drag and drop your source file here, or click to select.</CardDescription>
                     </CardHeader>
                     <CardContent>
                       <FileDropZone
                         onFilesAdded={handleSourceFilesAdded}
                         onFileRemove={handleSourceFileRemove}
                         files={sourceFiles}
-                        title="Source SQL File"
-                        description="Drag and drop your source .sql file here, or click to select."
+                        title="Source File"
+                        description="Drag and drop your source file here, or click to select."
                         accept=".sql"
                       />
                     </CardContent>
                   </Card>
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="text-lg">Upload Target SQL File</CardTitle>
-                      <CardDescription>Drag and drop your target .sql file here, or click to select.</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <FileDropZone
-                        onFilesAdded={handleTargetFilesAdded}
-                        onFileRemove={handleTargetFileRemove}
-                        files={targetFiles}
-                        title="Target SQL File"
-                        description="Drag and drop your target .sql file here, or click to select."
-                        accept=".sql"
-                      />
-                    </CardContent>
-                  </Card>
+                  {sourceFiles.length > 0 && (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-lg">Uploaded Files</CardTitle>
+                        <CardDescription>List of successfully uploaded source files.</CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <ul className="space-y-2">
+                          {sourceFiles.map(file => (
+                            <li key={file.id} className="flex items-center justify-between p-2 bg-muted/30 rounded-md">
+                              <span className="font-medium text-sm truncate">{file.name}</span>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleSourceFileRemove(file.id)}
+                                className="text-muted-foreground hover:text-destructive"
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </li>
+                          ))}
+                        </ul>
+                      </CardContent>
+                    </Card>
+                  )}
                 </div>
                 <div className="flex justify-center mt-6">
                   <Button
                     onClick={handleGenerateCodeClick}
-                    disabled={!sourceFileUploaded || !targetFileUploaded || codeGenerated || isLoading}
+                    disabled={!sourceFileUploaded || codeGenerated || isLoading}
                     className="min-w-[200px]"
                   >
                     {isLoading ? (
@@ -517,13 +467,13 @@ export function CodeGeneration() {
                         </Button>
                       </div>
     
-                      <Button
+                      {/* <Button
                         onClick={handleProceedToMapping}
                         disabled={!canProceedToNextPhase()}
                         className="min-w-[200px]"
                       >
                         Proceed to Mapping
-                      </Button>
+                      </Button> */}
                     </div>
                   </>
                 )}

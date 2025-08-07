@@ -23,7 +23,7 @@ export function PlatformSelector({
   onPlatformChange, 
   generatedCodes 
 }: PlatformSelectorProps) {
-  const platforms: CodePlatform[] = ['bigquery', 'databricks', 'python-beam', 'dbt'];
+  const platforms: CodePlatform[] = [];
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
