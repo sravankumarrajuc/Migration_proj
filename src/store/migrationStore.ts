@@ -89,6 +89,7 @@ interface MigrationState {
   completeCodeGeneration: () => void;
   setOriginalCodeForComparison: (code: string) => void;
   setOptimizedCodeForComparison: (code: string) => void;
+  resetCodeGenerationState: () => void;
   
   // Project completion
   completeProject: () => void;
@@ -687,6 +688,27 @@ export const useMigrationStore = create<MigrationState>()(
           },
         }));
       },
+
+      resetCodeGenerationState: () => set((state) => ({
+        codeGenerationState: {
+          isProcessing: false,
+          progress: 0,
+          currentStep: '',
+          selectedPlatform: 'bigquery',
+          generatedCodes: {
+            bigquery: null,
+            databricks: null,
+            'python-beam': null,
+            dbt: null,
+          },
+          optimizations: [],
+          previewMode: 'code',
+          error: null,
+          completedAt: null,
+          originalCodeForComparison: '',
+          optimizedCodeForComparison: '',
+        },
+      })),
 
       // Project completion
       completeProject: () => {

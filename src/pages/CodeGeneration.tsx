@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Download, RefreshCw, Upload, CheckCircle, Clock } from 'lucide-react';
+import { ArrowLeft, Download, RefreshCw, Upload, CheckCircle, Clock, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { FileDropZone } from '@/components/upload/FileDropZone';
@@ -32,7 +32,8 @@ export function CodeGeneration() {
     setCurrentPhase,
     setOriginalCodeForComparison,
     setOptimizedCodeForComparison,
-    setCurrentProject
+    setCurrentProject,
+    resetCodeGenerationState
   } = useMigrationStore();
 
   const [showOptimizer, setShowOptimizer] = useState(false);
@@ -45,6 +46,7 @@ export function CodeGeneration() {
   const [sourceFileUploaded, setSourceFileUploaded] = useState(false);
   const [targetFileUploaded, setTargetFileUploaded] = useState(false);
   const [codeGenerated, setCodeGenerated] = useState(false);
+  const [isLoading, setIsLoading] = useState(false); // New state for button loading
 
   const currentCode = codeGenerationState.generatedCodes[codeGenerationState.selectedPlatform];
   const isGenerating = codeGenerationState.isProcessing;
@@ -181,13 +183,6 @@ export function CodeGeneration() {
           setSelectedProjectName(null);
         }
       }
-    } else if (completedProjects.length > 0) {
-      // If no project in URL and no selected project, but there are completed projects,
-      // default to the first completed project and navigate to its URL.
-      const firstCompletedProject = completedProjects[0];
-      setCurrentProject(firstCompletedProject);
-      setSelectedProject(firstCompletedProject.id);
-      setSelectedProjectName(firstCompletedProject.name);
     } else {
       // If no projects at all, ensure currentProject is null
       setCurrentProject(null);
@@ -216,6 +211,7 @@ export function CodeGeneration() {
   };
 
   const handleGenerateCodeClick = useCallback(async () => {
+    setIsLoading(true); // Start loading
     startCodeGeneration(`Generating ${codeGenerationState.selectedPlatform} code...`);
     
     // Simulate AI code generation with progress
@@ -233,6 +229,7 @@ export function CodeGeneration() {
       completeCodeGeneration();
     }
     setCodeGenerated(true); // Set codeGenerated to true after generation
+    setIsLoading(false); // End loading
   }, [startCodeGeneration, setGeneratedCode, completeCodeGeneration, codeGenerationState.completedAt, codeGenerationState.selectedPlatform]);
 
   const handleRegenerateCode = () => {
@@ -261,10 +258,14 @@ export function CodeGeneration() {
                   setCurrentProject(project); // Set current project in store
                   setSelectedProjectName(project.name);
                   navigate(`/code-generation/${value}`);
+                  setCodeGenerated(false); // Reset codeGenerated state
+                  resetCodeGenerationState(); // Reset code generation state in store
                 } else {
                   setCurrentProject(null);
                   setSelectedProjectName(null);
                   navigate(`/code-generation`);
+                  setCodeGenerated(false); // Reset codeGenerated state
+                  resetCodeGenerationState(); // Reset code generation state in store
                 }
               }}>
                 <SelectTrigger className="w-full">
@@ -327,10 +328,17 @@ export function CodeGeneration() {
                 <div className="flex justify-center mt-6">
                   <Button
                     onClick={handleGenerateCodeClick}
-                    disabled={!sourceFileUploaded || !targetFileUploaded || codeGenerated}
+                    disabled={!sourceFileUploaded || !targetFileUploaded || codeGenerated || isLoading}
                     className="min-w-[200px]"
                   >
-                    {codeGenerated ? 'Code Generated' : 'Generate Code'}
+                    {isLoading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Generating...
+                      </>
+                    ) : (
+                      'Generate Code'
+                    )}
                   </Button>
                 </div>
     
