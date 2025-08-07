@@ -28,12 +28,6 @@ const steps = [
     icon: ArrowRightLeft,
   },
   {
-    id: 'codegen' as MigrationPhase,
-    name: 'Code Generation',
-    description: 'Generate ETL code',
-    icon: Code,
-  },
-  {
     id: 'validation' as MigrationPhase,
     name: 'Validation',
     description: 'Validate migration outputs',
@@ -57,34 +51,32 @@ export function StepIndicator({ currentPhase, completedPhases, className }: Step
             const Icon = step.icon;
             
             return (
-              <>
-                <div key={step.id} className="flex flex-col items-center text-center">
-                  <div
+              <div key={step.id} className="flex flex-col items-center text-center">
+                <div
+                  className={cn(
+                    'flex h-10 w-10 items-center justify-center rounded-full border-2 transition-all duration-300',
+                    status === 'completed' &&
+                      'border-primary bg-primary text-primary-foreground shadow-glow',
+                    status === 'current' &&
+                      'border-primary bg-background text-primary shadow-enterprise',
+                    status === 'upcoming' &&
+                      'border-muted-foreground/30 bg-background text-muted-foreground'
+                  )}
+                >
+                  <Icon className="h-5 w-5" />
+                </div>
+                <div className="mt-2 min-w-0 flex-1">
+                  <p
                     className={cn(
-                      'flex h-10 w-10 items-center justify-center rounded-full border-2 transition-all duration-300',
-                      status === 'completed' &&
-                        'border-primary bg-primary text-primary-foreground shadow-glow',
-                      status === 'current' &&
-                        'border-primary bg-background text-primary shadow-enterprise',
-                      status === 'upcoming' &&
-                        'border-muted-foreground/30 bg-background text-muted-foreground'
+                      'text-sm font-medium transition-colors',
+                      status === 'completed' && 'text-primary',
+                      status === 'current' && 'text-foreground',
+                      status === 'upcoming' && 'text-muted-foreground'
                     )}
                   >
-                    <Icon className="h-5 w-5" />
-                  </div>
-                  <div className="mt-2 min-w-0 flex-1">
-                    <p
-                      className={cn(
-                        'text-sm font-medium transition-colors',
-                        status === 'completed' && 'text-primary',
-                        status === 'current' && 'text-foreground',
-                        status === 'upcoming' && 'text-muted-foreground'
-                      )}
-                    >
-                      {step.name}
-                    </p>
-                    <p className="text-xs text-muted-foreground">{step.description}</p>
-                  </div>
+                    {step.name}
+                  </p>
+                  <p className="text-xs text-muted-foreground">{step.description}</p>
                 </div>
                 {index < steps.length - 1 && (
                   <div className="relative flex-1 h-0.5"> {/* This will be the line container */}
@@ -106,7 +98,7 @@ export function StepIndicator({ currentPhase, completedPhases, className }: Step
                     )} />
                   </div>
                 )}
-              </>
+              </div>
             );
           })}
         </div>

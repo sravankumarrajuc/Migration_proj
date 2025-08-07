@@ -112,8 +112,8 @@ export const useMigrationStore = create<MigrationState>()(
               createdAt: new Date().toISOString(),
               updatedAt: new Date().toISOString(),
               progress: {
-                currentPhase: 'validation', // Assuming validation phase as per the screenshot
-                completedPhases: ['upload', 'discovery', 'mapping', 'codegen', 'validation'],
+                currentPhase: 'validation',
+                completedPhases: ['upload', 'discovery', 'mapping', 'validation'],
                 schemasUploaded: true,
                 mappingsComplete: true,
                 codeGenerated: true,
@@ -178,7 +178,10 @@ export const useMigrationStore = create<MigrationState>()(
     },
 
       setCurrentProject: (project) => {
-        set({ currentProject: project, currentPhase: project.progress.currentPhase });
+        set((state) => ({
+          currentProject: project,
+          currentPhase: project ? project.progress.currentPhase : 'upload', // Default to 'upload' if project is null
+        }));
       },
 
       setCurrentPhase: (phase) => {
@@ -189,17 +192,46 @@ export const useMigrationStore = create<MigrationState>()(
           return;
         }
         
-        set({ currentPhase: phase });
         if (currentProject) {
-          set({
-            currentProject: {
+          const previousPhase = currentProject.progress.currentPhase;
+          const updatedCompletedPhases = [...new Set([...currentProject.progress.completedPhases, previousPhase])];
+
+          let updatedStatus = currentProject.status;
+          if (currentProject.status === 'draft' && phase === 'discovery') {
+            updatedStatus = 'in-progress';
+          }
+
+          set((state) => {
+            const updatedProject = {
               ...currentProject,
+              status: updatedStatus,
               progress: {
                 ...currentProject.progress,
                 currentPhase: phase,
+                completedPhases: updatedCompletedPhases as MigrationPhase[],
               },
-            },
+            };
+
+            // Persist the updated project to localStorage
+            if (typeof window !== 'undefined') {
+              const existingProjects = JSON.parse(localStorage.getItem('completed-projects') || '[]');
+              const updatedProjectsList = existingProjects.map((p: any) =>
+                p.id === updatedProject.id ? updatedProject : p
+              );
+              // If the project is new and not in existingProjects, add it
+              if (!updatedProjectsList.some((p: any) => p.id === updatedProject.id)) {
+                updatedProjectsList.push(updatedProject);
+              }
+              localStorage.setItem('completed-projects', JSON.stringify(updatedProjectsList));
+            }
+
+            return {
+              currentPhase: phase,
+              currentProject: updatedProject,
+            };
           });
+        } else {
+          set({ currentPhase: phase });
         }
       },
 
@@ -274,11 +306,6 @@ export const useMigrationStore = create<MigrationState>()(
           return canProceed;
         }
         
-        if (currentPhase === 'codegen') {
-          return codeGenerationState.completedAt !== null && 
-                 Object.values(codeGenerationState.generatedCodes).some(code => code !== null);
-        }
-        
         if (currentPhase === 'validation') {
           const { currentProject } = get();
           return currentProject?.progress?.validationComplete === true;
@@ -320,15 +347,29 @@ export const useMigrationStore = create<MigrationState>()(
       },
 
       completeDiscovery: () => {
-        set((state) => ({
-          discoveryState: {
-            ...state.discoveryState,
-            isProcessing: false,
-            progress: 100,
-            currentStep: 'Discovery complete',
-            completedAt: new Date().toISOString(),
-          },
-        }));
+        set((state) => {
+          const updatedCompletedPhases = state.currentProject
+            ? [...new Set([...state.currentProject.progress.completedPhases, 'discovery'])]
+            : ['discovery'];
+          return {
+            discoveryState: {
+              ...state.discoveryState,
+              isProcessing: false,
+              progress: 100,
+              currentStep: 'Discovery complete',
+              completedAt: new Date().toISOString(),
+            },
+            currentProject: state.currentProject
+              ? {
+                  ...state.currentProject,
+                  progress: {
+                    ...state.currentProject.progress,
+                    completedPhases: updatedCompletedPhases as MigrationPhase[],
+                  },
+                }
+              : state.currentProject,
+          };
+        });
       },
 
       resetDiscovery: () => {
@@ -549,7 +590,9 @@ export const useMigrationStore = create<MigrationState>()(
       completeMapping: () => {
         set((state) => {
           console.log('Completing mapping phase');
-          
+          const updatedCompletedPhases = state.currentProject
+            ? [...new Set([...state.currentProject.progress.completedPhases, 'mapping'])]
+            : ['mapping'];
           return {
             mappingState: {
               ...state.mappingState,
@@ -558,6 +601,15 @@ export const useMigrationStore = create<MigrationState>()(
               currentStep: 'Mapping complete',
               completedAt: new Date().toISOString(),
             },
+            currentProject: state.currentProject
+              ? {
+                  ...state.currentProject,
+                  progress: {
+                    ...state.currentProject.progress,
+                    completedPhases: updatedCompletedPhases as MigrationPhase[],
+                  },
+                }
+              : state.currentProject,
           };
         });
       },
@@ -647,16 +699,19 @@ export const useMigrationStore = create<MigrationState>()(
           updatedAt: new Date().toISOString(),
           progress: {
             ...currentProject.progress,
-            completedPhases: ['upload' as const, 'discovery' as const, 'mapping' as const, 'codegen' as const, 'validation' as const],
+            completedPhases: ['upload' as const, 'discovery' as const, 'mapping' as const, 'validation' as const],
             validationComplete: true,
+            schemasUploaded: true, // Assuming upload is completed when project is completed
+            mappingsComplete: true, // Assuming mapping is completed when project is completed
           }
         };
         
         // Update mockProjects data to persist the completion
         if (typeof window !== 'undefined') {
           const existingProjects = JSON.parse(localStorage.getItem('completed-projects') || '[]');
-          const updatedProjects = existingProjects.filter((p: any) => p.id !== completedProject.id);
-          updatedProjects.push(completedProject);
+          const updatedProjects = existingProjects.map((p: any) =>
+            p.id === completedProject.id ? completedProject : p
+          );
           localStorage.setItem('completed-projects', JSON.stringify(updatedProjects));
         }
         
@@ -705,10 +760,9 @@ export const useMigrationStore = create<MigrationState>()(
               updatedAt: new Date().toISOString(),
               progress: {
                 currentPhase: 'validation',
-                completedPhases: ['upload', 'discovery', 'mapping', 'codegen', 'validation'],
+                completedPhases: ['upload', 'discovery', 'mapping', 'validation'],
                 schemasUploaded: true,
                 mappingsComplete: true,
-                codeGenerated: true,
                 validationComplete: true,
               },
             };

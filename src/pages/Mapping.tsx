@@ -84,8 +84,8 @@ export function Mapping() {
   };
 
 
-  const handleProceedToCodeGeneration = () => {
-    console.log('Proceeding to code generation...');
+  const handleProceedToValidation = () => {
+    console.log('Proceeding to validation...');
     
     // Auto-approve any remaining high-confidence suggestions
     mappingState.suggestions.forEach(suggestion => {
@@ -99,7 +99,7 @@ export function Mapping() {
     completeMapping();
     
     // Navigate to code generation
-    navigate(`/codegen/${projectId}`);
+    navigate(`/validation/${projectId}`);
   };
 
   const availableTablePairs = mappingState.allMappings.map(m => ({
@@ -168,11 +168,11 @@ export function Mapping() {
                   {Math.round(overallProgress)}% Complete
                 </Badge>
                 <Button
-                  onClick={handleProceedToCodeGeneration}
+                  onClick={handleProceedToValidation}
                   disabled={!canProceedToNextPhase()}
                   className="gap-2"
                 >
-                  Proceed to Code Generation
+                  Proceed to Validation
                   <ArrowRight className="h-4 w-4" />
                 </Button>
               </div>

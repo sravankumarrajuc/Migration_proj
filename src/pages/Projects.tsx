@@ -9,16 +9,17 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { projectTemplates, dialectDisplayNames, getStatusColor, getPhaseProgress } from '@/data/mockProjects';
+import { projectTemplates, dialectDisplayNames, getStatusColor, getPhaseProgress, getMergedProjects } from '@/data/mockProjects';
 import { useMigrationStore } from '@/store/migrationStore';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Project, ProjectTemplate, SchemaDialect } from '@/types/migration';
 import { useToast } from '@/hooks/use-toast';
 
 export default function Projects() {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { setCurrentProject, setCurrentPhase } = useMigrationStore();
+  const location = useLocation();
+  const { currentProject, setCurrentProject, setCurrentPhase } = useMigrationStore();
   const [projects, setProjects] = useState<Project[]>([]);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [newProject, setNewProject] = useState({
@@ -31,32 +32,11 @@ export default function Projects() {
 
   // Load projects on component mount and refresh
   useEffect(() => {
-    const loadProjects = async () => {
-      const { mockProjects } = await import('@/data/mockProjects');
-      
-      let storedProjects: Project[] = [];
-      if (typeof window !== 'undefined') {
-        const stored = localStorage.getItem('completed-projects');
-        if (stored) {
-          storedProjects = JSON.parse(stored);
-        }
-      }
-
-      // Merge mock projects with stored projects, giving precedence to stored projects
-      const mergedProjects = mockProjects.map(mockProject => {
-        const storedProject = storedProjects.find(sp => sp.id === mockProject.id);
-        return storedProject || mockProject;
-      });
-
-      // Add any new projects that are only in localStorage (e.g., newly created ones)
-      const newOnlyInStorage = storedProjects.filter(
-        storedProject => !mockProjects.some(mockProject => mockProject.id === storedProject.id)
-      );
-
-      setProjects([...mergedProjects, ...newOnlyInStorage]);
+    const loadProjects = () => {
+      setProjects(getMergedProjects());
     };
     loadProjects();
-  }, []);
+  }, [isCreateDialogOpen, currentProject?.status, location.pathname]);
 
   const handleProjectSelect = (project: Project) => {
     setCurrentProject(project);
@@ -108,7 +88,6 @@ export default function Projects() {
         completedPhases: [],
         schemasUploaded: false,
         mappingsComplete: false,
-        codeGenerated: false,
         validationComplete: false,
       },
     };

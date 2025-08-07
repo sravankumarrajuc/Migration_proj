@@ -96,7 +96,7 @@ export function Header() {
         <div className="flex items-center space-x-4">
           <div
             className="flex items-center space-x-2 cursor-pointer"
-            onClick={() => navigate('/projects')}
+            onClick={() => navigate('/')}
           >
             <div className="flex h-8 w-8 items-center justify-center rounded bg-gradient-hero">
               <Building className="h-5 w-5 text-white" />
@@ -110,7 +110,6 @@ export function Header() {
             <>
               <div className="h-6 w-px bg-border" />
               <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-                <span>Project:</span>
                 <span className="font-medium text-foreground">{currentProject.name}</span>
                 <Badge className={getStatusColor(currentProject.status)}>
                   {getStatusIcon(currentProject.status)}

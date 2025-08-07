@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AppLayout } from "./components/layout/AppLayout";
+import Index from "./pages/Index";
 import Projects from "./pages/Projects";
 import SchemaUpload from "./pages/SchemaUpload";
 import Discovery from "./pages/Discovery";
@@ -23,7 +24,7 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <Routes>
-            <Route path="/" element={<Navigate to="/projects" replace />} />
+            <Route path="/" element={<Index />} />
             <Route path="/projects" element={<AppLayout />}>
               <Route index element={<Projects />} />
             </Route>
@@ -37,7 +38,10 @@ const App = () => (
             <Route path="/mapping/:projectId" element={<AppLayout />}>
               <Route index element={<Mapping />} />
             </Route>
-            <Route path="/codegen/:projectId" element={<AppLayout />}>
+            <Route path="/code-generation" element={<AppLayout />}>
+              <Route index element={<CodeGeneration />} />
+            </Route>
+            <Route path="/code-generation/:projectId" element={<AppLayout />}>
               <Route index element={<CodeGeneration />} />
             </Route>
             <Route path="/validation/:projectId" element={<AppLayout />}>
