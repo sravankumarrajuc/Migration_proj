@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowRight, Database, Target } from 'lucide-react';
+import { ArrowRight, Database, Target, File, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -10,6 +10,8 @@ import { dialectDisplayNames } from '@/data/mockProjects';
 import { SchemaFile, SchemaDialect, SchemaPreview } from '@/types/migration';
 import { parseDdlContent } from '@/utils/ddlParser';
 import { useToast } from '@/hooks/use-toast';
+import { Progress } from '@/components/ui/progress';
+import { cn } from '@/lib/utils';
 
 // Mock data for schema previews
 
@@ -131,6 +133,40 @@ export default function SchemaUpload() {
     });
   };
 
+  const getFileIcon = (fileName: string) => {
+    const extension = fileName.split('.').pop()?.toLowerCase();
+    // You can extend this with more specific icons based on extension
+    return <File className="h-4 w-4" />;
+  };
+
+  const getStatusColor = (status: SchemaFile['status']) => {
+    switch (status) {
+      case 'completed':
+        return 'text-emerald-600';
+      case 'processing':
+        return 'text-blue-600';
+      case 'error':
+        return 'text-red-600';
+      default:
+        return 'text-muted-foreground';
+    }
+  };
+
+  const getProgressValue = (status: SchemaFile['status']) => {
+    switch (status) {
+      case 'uploading':
+        return 25;
+      case 'processing':
+        return 75;
+      case 'completed':
+        return 100;
+      case 'error':
+        return 0;
+      default:
+        return 0;
+    }
+  };
+
   const handleProceedToDiscovery = () => {
     if (canProceedToNextPhase()) {
       setCurrentPhase('discovery');
@@ -209,23 +245,54 @@ export default function SchemaUpload() {
             />
 
             {sourceFiles.length > 0 && (
-              <div className="pt-4 border-t">
-                <h4 className="text-sm font-medium mb-2">Summary</h4>
-                <div className="grid grid-cols-3 gap-4 text-center">
-                  <div>
-                    <p className="text-2xl font-bold text-primary">{sourceStats.fileCount}</p>
-                    <p className="text-xs text-muted-foreground">Files</p>
-                  </div>
-                  <div>
-                    <p className="text-2xl font-bold text-primary">{sourceStats.totalTables}</p>
-                    <p className="text-xs text-muted-foreground">Tables</p>
-                  </div>
-                  <div>
-                    <p className="text-2xl font-bold text-primary">{sourceStats.totalColumns}</p>
-                    <p className="text-xs text-muted-foreground">Columns</p>
+              <>
+                <div className="pt-4 border-t">
+                  <h4 className="text-sm font-medium mb-2">Summary</h4>
+                  <div className="grid grid-cols-3 gap-4 text-center">
+                    <div>
+                      <p className="text-2xl font-bold text-primary">{sourceStats.fileCount}</p>
+                      <p className="text-xs text-muted-foreground">Files</p>
+                    </div>
+                    <div>
+                      <p className="text-2xl font-bold text-primary">{sourceStats.totalTables}</p>
+                      <p className="text-xs text-muted-foreground">Tables</p>
+                    </div>
+                    <div>
+                      <p className="text-2xl font-bold text-primary">{sourceStats.totalColumns}</p>
+                      <p className="text-xs text-muted-foreground">Columns</p>
+                    </div>
                   </div>
                 </div>
-              </div>
+                <div className="pt-4 border-t">
+                  <h4 className="text-sm font-medium mb-2">Uploaded Files</h4>
+                  <ul className="space-y-2">
+                    {sourceFiles.map((file) => (
+                      <li key={file.id} className="flex items-center justify-between p-2 border rounded-md">
+                        <div className="flex items-center space-x-2">
+                          {getFileIcon(file.name)}
+                          <span className="text-sm font-medium truncate max-w-[200px]">{file.name}</span>
+                          <span className={cn("text-xs", getStatusColor(file.status))}>
+                            ({file.status.charAt(0).toUpperCase() + file.status.slice(1)})
+                          </span>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          {file.status === 'uploading' || file.status === 'processing' ? (
+                            <Progress value={getProgressValue(file.status)} className="w-24 h-2" />
+                          ) : null}
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => removeFile(file.id, 'source')}
+                            className="text-muted-foreground hover:text-destructive"
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </>
             )}
 
           </CardContent>
@@ -270,23 +337,54 @@ export default function SchemaUpload() {
             />
 
             {targetFiles.length > 0 && (
-              <div className="pt-4 border-t">
-                <h4 className="text-sm font-medium mb-2">Summary</h4>
-                <div className="grid grid-cols-3 gap-4 text-center">
-                  <div>
-                    <p className="text-2xl font-bold text-primary">{targetStats.fileCount}</p>
-                    <p className="text-xs text-muted-foreground">Files</p>
-                  </div>
-                  <div>
-                    <p className="text-2xl font-bold text-primary">{targetStats.totalTables}</p>
-                    <p className="text-xs text-muted-foreground">Tables</p>
-                  </div>
-                  <div>
-                    <p className="text-2xl font-bold text-primary">{targetStats.totalColumns}</p>
-                    <p className="text-xs text-muted-foreground">Columns</p>
+              <>
+                <div className="pt-4 border-t">
+                  <h4 className="text-sm font-medium mb-2">Summary</h4>
+                  <div className="grid grid-cols-3 gap-4 text-center">
+                    <div>
+                      <p className="text-2xl font-bold text-primary">{targetStats.fileCount}</p>
+                      <p className="text-xs text-muted-foreground">Files</p>
+                    </div>
+                    <div>
+                      <p className="text-2xl font-bold text-primary">{targetStats.totalTables}</p>
+                      <p className="text-xs text-muted-foreground">Tables</p>
+                    </div>
+                    <div>
+                      <p className="text-2xl font-bold text-primary">{targetStats.totalColumns}</p>
+                      <p className="text-xs text-muted-foreground">Columns</p>
+                    </div>
                   </div>
                 </div>
-              </div>
+                <div className="pt-4 border-t">
+                  <h4 className="text-sm font-medium mb-2">Uploaded Files</h4>
+                  <ul className="space-y-2">
+                    {targetFiles.map((file) => (
+                      <li key={file.id} className="flex items-center justify-between p-2 border rounded-md">
+                        <div className="flex items-center space-x-2">
+                          {getFileIcon(file.name)}
+                          <span className="text-sm font-medium truncate max-w-[200px]">{file.name}</span>
+                          <span className={cn("text-xs", getStatusColor(file.status))}>
+                            ({file.status.charAt(0).toUpperCase() + file.status.slice(1)})
+                          </span>
+                        </div>
+                        <div className="items-center space-x-2">
+                          {file.status === 'uploading' || file.status === 'processing' ? (
+                            <Progress value={getProgressValue(file.status)} className="w-24 h-2" />
+                          ) : null}
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => removeFile(file.id, 'target')}
+                            className="text-muted-foreground hover:text-destructive"
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </>
             )}
           </CardContent>
         </Card>
