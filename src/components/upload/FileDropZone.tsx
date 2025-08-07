@@ -79,7 +79,7 @@ export function FileDropZone({
       <div
         {...getRootProps()}
         className={cn(
-          'border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors hover:bg-muted/50',
+          'border-2 border-dashed rounded-lg py-4 text-center cursor-pointer transition-colors hover:bg-muted/50',
           isDragActive ? 'border-primary bg-primary/5' : 'border-border',
           files.length === 0 ? 'min-h-[200px] flex items-center justify-center' : 'min-h-[120px]'
         )}
