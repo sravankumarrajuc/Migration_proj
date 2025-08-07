@@ -173,10 +173,10 @@ export default function Projects() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold bg-gradient-hero bg-clip-text text-transparent">
-              Migration Projects
+              Schema Analyzer
             </h1>
             <p className="text-muted-foreground mt-2">
-              Manage your data migration projects and track progress across all phases.
+              Manage your data Schema Analyzer and track progress across all phases.
             </p>
           </div>
           

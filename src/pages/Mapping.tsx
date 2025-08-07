@@ -13,7 +13,7 @@ import { MappingCanvas } from '@/components/mapping/MappingCanvas';
 import { AISuggestionsPanel } from '@/components/mapping/AISuggestionsPanel';
 import { MappingReview } from '@/components/mapping/MappingReview';
 import { mockTableMappings } from '@/data/mockMappingData';
-import { Loader2, ArrowRight, CheckCircle, AlertCircle } from 'lucide-react';
+import { Loader2, ArrowRight, CheckCircle, AlertCircle, Sparkles } from 'lucide-react';
 
 export function Mapping() {
   const { projectId } = useParams();
@@ -210,16 +210,23 @@ export function Mapping() {
 
             {/* Mapping Canvas */}
             <ResizablePanel defaultSize={40} minSize={30}>
-              <MappingCanvas
-                tableMappings={displayAllCanvasMappings
-                  ? mappingState.allMappings
-                  : mappingState.allMappings.map(tableMapping => ({
-                      ...tableMapping,
-                      fieldMappings: tableMapping.fieldMappings.filter(fm => fm.confidence >= 90)
-                    }))
-                } // Conditionally pass mappings
-                showAllText={displayAllCanvasMappings} // Pass the new state for text visibility
-              />
+              {mappingState.isProcessing ? (
+                <div className="flex items-center justify-center h-full">
+                  <Loader2 className="h-12 w-12 text-primary animate-spin" />
+                  <span className="ml-4 text-lg text-muted-foreground">Generating Field Mappings...</span>
+                </div>
+              ) : (
+                <MappingCanvas
+                  tableMappings={displayAllCanvasMappings
+                    ? mappingState.allMappings
+                    : mappingState.allMappings.map(tableMapping => ({
+                        ...tableMapping,
+                        fieldMappings: tableMapping.fieldMappings.filter(fm => fm.confidence >= 90)
+                      }))
+                  } // Conditionally pass mappings
+                  showAllText={displayAllCanvasMappings} // Pass the new state for text visibility
+                />
+              )}
             </ResizablePanel>
 
             <ResizableHandle withHandle />
