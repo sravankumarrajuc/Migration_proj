@@ -1,4 +1,4 @@
-import { Check, Upload, Search, ArrowRightLeft, Code, Shield } from 'lucide-react';
+import { Check, Upload, Search, ArrowRightLeft, Code, Shield, ArrowRight } from 'lucide-react';
 import { MigrationPhase } from '@/types/migration';
 import { cn } from '@/lib/utils';
 
@@ -13,13 +13,13 @@ const steps = [
     id: 'upload' as MigrationPhase,
     name: 'Schema Upload',
     description: 'Upload source & target schemas',
-    icon: Upload,
+    icon: Check,
   },
   {
     id: 'discovery' as MigrationPhase,
     name: 'Discovery',
     description: 'Analyze data lineage & relationships',
-    icon: Search,
+    icon: Check,
   },
   {
     id: 'mapping' as MigrationPhase,
@@ -51,14 +51,14 @@ export function StepIndicator({ currentPhase, completedPhases, className }: Step
   return (
     <div className={cn('w-full bg-card border-b', className)}>
       <div className="container mx-auto px-6 py-4">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-center gap-x-4">
           {steps.map((step, index) => {
             const status = getStepStatus(step.id);
             const Icon = step.icon;
             
             return (
-              <div key={step.id} className="flex items-center">
-                <div className="flex flex-col items-center text-center">
+              <>
+                <div key={step.id} className="flex flex-col items-center text-center">
                   <div
                     className={cn(
                       'flex h-10 w-10 items-center justify-center rounded-full border-2 transition-all duration-300',
@@ -70,11 +70,7 @@ export function StepIndicator({ currentPhase, completedPhases, className }: Step
                         'border-muted-foreground/30 bg-background text-muted-foreground'
                     )}
                   >
-                    {status === 'completed' ? (
-                      <Check className="h-5 w-5" />
-                    ) : (
-                      <Icon className="h-5 w-5" />
-                    )}
+                    <Icon className="h-5 w-5" />
                   </div>
                   <div className="mt-2 min-w-0 flex-1">
                     <p
@@ -91,14 +87,26 @@ export function StepIndicator({ currentPhase, completedPhases, className }: Step
                   </div>
                 </div>
                 {index < steps.length - 1 && (
-                  <div
-                    className={cn(
-                      'mx-4 h-px w-16 transition-colors lg:w-24',
-                      completedPhases.includes(step.id) ? 'bg-primary' : 'bg-border'
-                    )}
-                  />
+                  <div className="relative flex-1 h-0.5"> {/* This will be the line container */}
+                    <div
+                      className={cn(
+                        'absolute inset-y-0 left-0 right-0 transition-colors', // Line itself
+                        completedPhases.includes(step.id) ? 'bg-primary' : 'bg-border'
+                      )}
+                    />
+                    <div className={cn(
+                      'absolute top-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2 flex items-center justify-center h-4 w-4 rounded-full border',
+                      completedPhases.includes(step.id) ? 'border-primary bg-primary' : 'border-muted-foreground/30 bg-background'
+                    )}>
+                      {completedPhases.includes(step.id) && <Check className="h-3 w-3 text-primary-foreground" />}
+                    </div>
+                    <ArrowRight className={cn(
+                      'absolute top-1/2 -translate-y-1/2 right-0 h-4 w-4 transition-colors',
+                      completedPhases.includes(step.id) ? 'text-primary' : 'text-border'
+                    )} />
+                  </div>
                 )}
-              </div>
+              </>
             );
           })}
         </div>
