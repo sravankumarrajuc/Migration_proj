@@ -99,48 +99,6 @@ export function FileDropZone({
         </div>
       </div>
 
-      {files.length > 0 && (
-        <div className="space-y-2">
-          <h4 className="text-sm font-medium">Uploaded Files</h4>
-          {files.map((file) => (
-            <div key={file.id} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
-              <div className="flex items-center space-x-3 flex-1">
-                {getFileIcon(file.name)}
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">{file.name}</p>
-                  <div className="flex items-center space-x-4 mt-1">
-                    <p className="text-xs text-muted-foreground">
-                      {(file.size / 1024).toFixed(1)} KB
-                    </p>
-                    <p className={cn('text-xs capitalize', getStatusColor(file.status))}>
-                      {file.status}
-                    </p>
-                    {file.preview && (
-                      <p className="text-xs text-muted-foreground">
-                        {file.preview.tableCount} tables, {file.preview.columnCount} columns
-                      </p>
-                    )}
-                  </div>
-                  {(file.status === 'uploading' || file.status === 'processing') && (
-                    <Progress value={getProgressValue(file.status)} className="mt-2 h-1" />
-                  )}
-                </div>
-              </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onFileRemove(file.id);
-                }}
-                className="text-muted-foreground hover:text-destructive"
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-          ))}
-        </div>
-      )}
     </div>
   );
 }

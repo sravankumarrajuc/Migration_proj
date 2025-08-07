@@ -15,7 +15,6 @@ export interface ProjectProgress {
   completedPhases: MigrationPhase[];
   schemasUploaded: boolean;
   mappingsComplete: boolean;
-  codeGenerated: boolean;
   validationComplete: boolean;
 }
 

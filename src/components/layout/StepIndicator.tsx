@@ -28,12 +28,6 @@ const steps = [
     icon: ArrowRightLeft,
   },
   {
-    id: 'codegen' as MigrationPhase,
-    name: 'Code Generation',
-    description: 'Generate ETL code',
-    icon: Code,
-  },
-  {
     id: 'validation' as MigrationPhase,
     name: 'Validation',
     description: 'Validate migration outputs',
@@ -51,14 +45,14 @@ export function StepIndicator({ currentPhase, completedPhases, className }: Step
   return (
     <div className={cn('w-full bg-card border-b', className)}>
       <div className="container mx-auto px-6 py-4">
-        <div className="flex items-center justify-center gap-x-4">
+        <div className="flex items-start justify-between w-full">
           {steps.map((step, index) => {
             const status = getStepStatus(step.id);
             const Icon = step.icon;
-            
+
             return (
               <>
-                <div key={step.id} className="flex flex-col items-center text-center">
+                <div key={step.id} className="flex flex-col items-center text-center flex-shrink-0">
                   <div
                     className={cn(
                       'flex h-10 w-10 items-center justify-center rounded-full border-2 transition-all duration-300',
@@ -72,7 +66,7 @@ export function StepIndicator({ currentPhase, completedPhases, className }: Step
                   >
                     <Icon className="h-5 w-5" />
                   </div>
-                  <div className="mt-2 min-w-0 flex-1">
+                  <div className="mt-2 min-w-0">
                     <p
                       className={cn(
                         'text-sm font-medium transition-colors',
@@ -87,23 +81,26 @@ export function StepIndicator({ currentPhase, completedPhases, className }: Step
                   </div>
                 </div>
                 {index < steps.length - 1 && (
-                  <div className="relative flex-1 h-0.5"> {/* This will be the line container */}
+                  <div className="flex-1 flex items-center justify-center h-px relative mx-4 mt-5">
                     <div
                       className={cn(
-                        'absolute inset-y-0 left-0 right-0 transition-colors', // Line itself
+                        'absolute inset-y-0 left-0 right-0 transition-colors h-0.5',
                         completedPhases.includes(step.id) ? 'bg-primary' : 'bg-border'
                       )}
                     />
                     <div className={cn(
-                      'absolute top-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2 flex items-center justify-center h-4 w-4 rounded-full border',
+                      'absolute top-1/2 -translate-y-1/2 flex items-center justify-center h-4 w-4 rounded-full border',
                       completedPhases.includes(step.id) ? 'border-primary bg-primary' : 'border-muted-foreground/30 bg-background'
                     )}>
-                      {completedPhases.includes(step.id) && <Check className="h-3 w-3 text-primary-foreground" />}
+                      {completedPhases.includes(step.id) ? (
+                        <Check className="h-3 w-3 text-primary-foreground" />
+                      ) : (
+                        <ArrowRight className={cn(
+                          'h-3 w-3 transition-colors',
+                          completedPhases.includes(step.id) ? 'text-primary-foreground' : 'text-muted-foreground'
+                        )} />
+                      )}
                     </div>
-                    <ArrowRight className={cn(
-                      'absolute top-1/2 -translate-y-1/2 right-0 h-4 w-4 transition-colors',
-                      completedPhases.includes(step.id) ? 'text-primary' : 'text-border'
-                    )} />
                   </div>
                 )}
               </>

@@ -38,10 +38,10 @@ export function Validation() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => navigate(`/codegen/${projectId}`)}
+              onClick={() => navigate(`/mapping/${projectId}`)}
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Code Generation
+              Back to Field Mapping
             </Button>
             <div>
               <h1 className="text-3xl font-bold text-foreground">Validation & QA</h1>

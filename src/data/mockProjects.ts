@@ -1,17 +1,24 @@
 import { Project, ProjectTemplate } from '@/types/migration';
 
 // Helper function to get completed projects from localStorage
-const getCompletedProjects = (): Project[] => {
+export const getCompletedProjects = (): Project[] => {
   if (typeof window === 'undefined') return [];
   try {
-    return JSON.parse(localStorage.getItem('completed-projects') || '[]');
-  } catch {
-    return [];
+    const storedProjects = localStorage.getItem('completed-projects');
+    if (storedProjects) {
+      return JSON.parse(storedProjects);
+    }
+    // Fallback to mock completed projects if localStorage is empty
+    return baseMockProjects.filter(p => p.status === 'completed');
+  } catch (error) {
+    console.error("Failed to parse completed projects from localStorage:", error);
+    // Fallback to mock completed projects on error
+    return baseMockProjects.filter(p => p.status === 'completed');
   }
 };
 
 // Helper function to merge completed projects with mock data
-const getMergedProjects = (): Project[] => {
+export const getMergedProjects = (): Project[] => {
   const completedProjects = getCompletedProjects();
   const baseProjects = baseMockProjects.map(project => {
     const completedProject = completedProjects.find(cp => cp.id === project.id);
@@ -41,7 +48,6 @@ const baseMockProjects: Project[] = [
       completedPhases: ['upload', 'discovery'],
       schemasUploaded: true,
       mappingsComplete: false,
-      codeGenerated: false,
       validationComplete: false,
     },
   },
@@ -56,10 +62,9 @@ const baseMockProjects: Project[] = [
     updatedAt: '2024-01-25T16:45:00Z',
     progress: {
       currentPhase: 'validation',
-      completedPhases: ['upload', 'discovery', 'mapping', 'codegen', 'validation'],
+      completedPhases: ['upload', 'discovery', 'mapping', 'validation'],
       schemasUploaded: true,
       mappingsComplete: true,
-      codeGenerated: true,
       validationComplete: true,
     },
   },
@@ -77,13 +82,11 @@ const baseMockProjects: Project[] = [
       completedPhases: [],
       schemasUploaded: false,
       mappingsComplete: false,
-      codeGenerated: false,
       validationComplete: false,
     },
   },
 ];
 
-export const mockProjects: Project[] = getMergedProjects();
 
 export const projectTemplates: ProjectTemplate[] = [
   {
@@ -151,6 +154,6 @@ export const getStatusColor = (status: Project['status']) => {
 };
 
 export const getPhaseProgress = (completedPhases: string[]) => {
-  const totalPhases = 5;
+  const totalPhases = 4;
   return (completedPhases.length / totalPhases) * 100;
 };

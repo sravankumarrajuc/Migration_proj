@@ -6,7 +6,7 @@ import { useMigrationStore } from '@/store/migrationStore';
 export function AppLayout() {
   const location = useLocation();
   const { currentProject, currentPhase } = useMigrationStore();
-  const showStepIndicator = currentProject && location.pathname !== '/projects';
+  const showStepIndicator = currentProject && location.pathname !== '/projects' && !location.pathname.startsWith('/code-generation');
 
   return (
     <div className="min-h-screen bg-background">

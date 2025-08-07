@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import heroImage from "@/assets/hero-migration.jpg";
 import { ArrowRight, Database, Cloud, Zap } from "lucide-react";
+import { Link } from "react-router-dom";
 
 export const HeroSection = () => {
   return (
@@ -65,17 +66,20 @@ export const HeroSection = () => {
 
           {/* CTA buttons */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
-            <Button variant="hero" size="lg" className="px-8 py-6 text-lg">
-              Start Free Migration
-              <ArrowRight className="w-5 h-5 ml-2" />
-            </Button>
-            <Button variant="outline" size="lg" className="px-8 py-6 text-lg">
-              Watch Demo
-            </Button>
+            <Link to="/projects">
+              <Button variant="hero" size="lg" className="px-8 py-6 text-lg">
+                Schema Analyzer
+              </Button>
+            </Link>
+            <Link to="/code-generation">
+              <Button variant="outline" size="lg" className="px-8 py-6 text-lg">
+                Report Code Migration
+              </Button>
+            </Link>
           </div>
 
           {/* Trust indicators */}
-          <div className="pt-8 text-center">
+          {/* <div className="pt-8 text-center">
             <p className="text-sm text-muted-foreground mb-4">Trusted by enterprise teams worldwide</p>
             <div className="flex items-center justify-center space-x-8 opacity-60">
               <span className="text-sm font-medium">Fortune 500</span>
@@ -84,7 +88,7 @@ export const HeroSection = () => {
               <span className="text-sm font-medium">•</span>
               <span className="text-sm font-medium">SOC 2 Compliant</span>
             </div>
-          </div>
+          </div> */}
         </div>
       </div>
     </section>
