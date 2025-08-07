@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { DiffEditor } from '@monaco-editor/react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -116,7 +116,6 @@ export function CodeOptimizer({
 
 setOptimizedCode(optimized);
     setIsOptimizing(false);
-    onOpenChange(false); // Close the dialog after optimization
   };
 
   const handleApplyChanges = () => {
@@ -264,7 +263,7 @@ setOptimizedCode(optimized);
                   height="100%"
                   language={platform === 'bigquery' ? 'sql' : platform === 'dbt' ? 'sql' : 'python'}
                   original={originalCodeForComparison || code}
-                  modified={optimizedCodeForComparison || optimizedCode || code}
+                  modified={optimizedCode || optimizedCodeForComparison || code}
                   theme="vs-dark"
                   options={{
                     readOnly: true,
@@ -281,6 +280,7 @@ setOptimizedCode(optimized);
                 />
               </div>
             </div>
+    
           </TabsContent>
         </Tabs>
 
@@ -293,6 +293,15 @@ setOptimizedCode(optimized);
             )}
           </div>
         </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            Cancel
+          </Button>
+          <Button onClick={handleApplyChanges}>
+            Apply
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

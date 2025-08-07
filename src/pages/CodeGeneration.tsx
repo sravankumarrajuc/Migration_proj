@@ -191,7 +191,7 @@ export function CodeGeneration() {
 
   return (
     <ErrorBoundary>
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-4">
             {/* Header */}
             <div className="flex items-center justify-between mb-8">
               <h1 className="text-3xl font-bold text-foreground">Report Code Migration</h1>
@@ -232,7 +232,7 @@ export function CodeGeneration() {
             {selectedProject && (
               <>
                 {/* File Uploads */}
-                <div className={`grid grid-cols-1 ${sourceFiles.length > 0 ? 'md:grid-cols-2' : ''} gap-6 mb-8`}>
+                <div className={`grid grid-cols-1 ${sourceFiles.length > 0 ? 'md:grid-cols-2' : ''} gap-3 mb-4`}>
                   <Card className={`${sourceFiles.length === 0 ? 'md:col-span-2' : ''}`}>
                     <CardHeader>
                       <CardTitle className="text-lg">Upload Source File</CardTitle>
