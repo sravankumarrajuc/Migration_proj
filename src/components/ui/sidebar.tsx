@@ -2,6 +2,7 @@ import * as React from "react"
 import { Slot } from "@radix-ui/react-slot"
 import { VariantProps, cva } from "class-variance-authority"
 import { PanelLeft } from "lucide-react"
+import { useLocation } from "react-router-dom"
 
 import { useIsMobile } from "@/hooks/use-mobile"
 import { cn } from "@/lib/utils"
@@ -48,14 +49,12 @@ function useSidebar() {
 const SidebarProvider = React.forwardRef<
   HTMLDivElement,
   React.ComponentProps<"div"> & {
-    defaultOpen?: boolean
     open?: boolean
     onOpenChange?: (open: boolean) => void
   }
 >(
   (
     {
-      defaultOpen = true,
       open: openProp,
       onOpenChange: setOpenProp,
       className,
@@ -66,11 +65,15 @@ const SidebarProvider = React.forwardRef<
     ref
   ) => {
     const isMobile = useIsMobile()
+    const { pathname } = useLocation()
     const [openMobile, setOpenMobile] = React.useState(false)
+
+    // Determine initial open state based on pathname
+    const initialOpen = pathname === "/"
 
     // This is the internal state of the sidebar.
     // We use openProp and setOpenProp for control from outside the component.
-    const [_open, _setOpen] = React.useState(defaultOpen)
+    const [_open, _setOpen] = React.useState(initialOpen)
     const open = openProp ?? _open
     const setOpen = React.useCallback(
       (value: boolean | ((value: boolean) => boolean)) => {
@@ -86,6 +89,11 @@ const SidebarProvider = React.forwardRef<
       },
       [setOpenProp, open]
     )
+
+    // Update sidebar open state when pathname changes
+    React.useEffect(() => {
+      _setOpen(pathname === "/")
+    }, [pathname])
 
     // Helper to toggle the sidebar.
     const toggleSidebar = React.useCallback(() => {

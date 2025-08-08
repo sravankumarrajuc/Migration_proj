@@ -102,8 +102,8 @@ export function AppLayout() {
     location.pathname !== '/';
 
   return (
-    <SidebarProvider defaultOpen={true}>
-      <Sidebar>
+    <SidebarProvider>
+      <Sidebar collapsible="icon">
         <SidebarHeader>
           <Link to="/" className="flex items-center gap-2 font-semibold">
             <img src="/factspan_bp.png" alt="FactiMigrate Logo" className="h-6 w-6" />
