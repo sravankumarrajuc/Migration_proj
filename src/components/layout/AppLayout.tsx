@@ -153,8 +153,8 @@ export function AppLayout() {
                 asChild
                 isActive={location.pathname.startsWith('/gen-ai-studio')}
               >
-                <Link to="/gen-ai-studio">
-                  <div className="flex items-center gap-2">
+                <Link to="/gen-ai-studio" aria-disabled="true" tabIndex={-1}>
+                  <div className="flex items-center gap-2 pointer-events-none opacity-50">
                     <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" fill="none">
                       <path d="M27 6V11H17V6H27ZM27 4H17C16.4696 4 15.9609 4.21071 15.5858 4.58579C15.2107 4.96086 15 5.46957 15 6V11C15 11.5304 15.2107 12.0391 15.5858 12.4142C15.9609 12.7893 16.4696 13 17 13H27C27.5304 13 28.0391 12.7893 28.4142 12.4142C28.7893 12.0391 29 11.5304 29 11V6C29 5.46957 28.7893 4.96086 28.4142 4.58579C28.0391 4.21071 27.5304 4 27 4Z" fill="#818199"/>
                       <path d="M11 6V11H6V6H11ZM11 4H6C5.46957 4 4.96086 4.21071 4.58579 4.58579C4.21071 4.96086 4 5.46957 4 6V11C4 11.5304 4.21071 12.0391 4.58579 12.4142C4.96086 12.7893 5.46957 13 6 13H11C11.5304 13 12.0391 12.7893 12.4142 12.4142C12.7893 12.0391 13 11.5304 13 11V6C13 5.46957 12.7893 4.96086 12.4142 4.58579C12.0391 4.21071 11.5304 4 11 4Z" fill="#818199"/>
@@ -171,8 +171,8 @@ export function AppLayout() {
                 asChild
                 isActive={location.pathname.startsWith('/factillm-copilot')}
               >
-                <Link to="/factillm-copilot">
-                  <div className="flex items-center gap-2">
+                <Link to="/factillm-copilot" aria-disabled="true" tabIndex={-1}>
+                  <div className="flex items-center gap-2 pointer-events-none opacity-50">
                     <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" fill="none">
                       <path d="M27 6V11H17V6H27ZM27 4H17C16.4696 4 15.9609 4.21071 15.5858 4.58579C15.2107 4.96086 15 5.46957 15 6V11C15 11.5304 15.2107 12.0391 15.5858 12.4142C15.9609 12.7893 16.4696 13 17 13H27C27.5304 13 28.0391 12.7893 28.4142 12.4142C28.7893 12.0391 29 11.5304 29 11V6C29 5.46957 28.7893 4.96086 28.4142 4.58579C28.0391 4.21071 27.5304 4 27 4Z" fill="#818199"/>
                       <path d="M11 6V11H6V6H11ZM11 4H6C5.46957 4 4.96086 4.21071 4.58579 4.58579C4.21071 4.96086 4 5.46957 4 6V11C4 11.5304 4.21071 12.0391 4.58579 12.4142C4.96086 12.7893 5.46957 13 6 13H11C11.5304 13 12.0391 12.7893 12.4142 12.4142C12.7893 12.0391 13 11.5304 13 11V6C13 5.46957 12.7893 4.96086 12.4142 4.58579C12.0391 4.21071 11.5304 4 11 4Z" fill="#818199"/>
@@ -189,8 +189,8 @@ export function AppLayout() {
                 asChild
                 isActive={location.pathname.startsWith('/factillm-evaluate')}
               >
-                <Link to="/factillm-evaluate">
-                  <div className="flex items-center gap-2">
+                <Link to="/factillm-evaluate" aria-disabled="true" tabIndex={-1}>
+                  <div className="flex items-center gap-2 pointer-events-none opacity-50">
                     <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" fill="none">
                       <path d="M27 6V11H17V6H27ZM27 4H17C16.4696 4 15.9609 4.21071 15.5858 4.58579C15.2107 4.96086 15 5.46957 15 6V11C15 11.5304 15.2107 12.0391 15.5858 12.4142C15.9609 12.7893 16.4696 13 17 13H27C27.5304 13 28.0391 12.7893 28.4142 12.4142C28.7893 12.0391 29 11.5304 29 11V6C29 5.46957 28.7893 4.96086 28.4142 4.58579C28.0391 4.21071 27.5304 4 27 4Z" fill="#818199"/>
                       <path d="M11 6V11H6V6H11ZM11 4H6C5.46957 4 4.96086 4.21071 4.58579 4.58579C4.21071 4.96086 4 5.46957 4 6V11C4 11.5304 4.21071 12.0391 4.58579 12.4142C4.96086 12.7893 5.46957 13 6 13H11C11.5304 13 12.0391 12.7893 12.4142 12.4142C12.7893 12.0391 13 11.5304 13 11V6C13 5.46957 12.7893 4.96086 12.4142 4.58579C12.0391 4.21071 11.5304 4 11 4Z" fill="#818199"/>
@@ -207,8 +207,8 @@ export function AppLayout() {
                 asChild
                 isActive={location.pathname.startsWith('/history')}
               >
-                <Link to="/history">
-                  <div className="flex items-center gap-2">
+                <Link to="/history" aria-disabled="true" tabIndex={-1}>
+                  <div className="flex items-center gap-2 pointer-events-none opacity-50">
                     <History className="text-gray-500" />
                     <span className="bg-gradient-hero bg-clip-text text-transparent">HISTORY</span>
                   </div>
@@ -220,8 +220,8 @@ export function AppLayout() {
                 asChild
                 isActive={location.pathname.startsWith('/global-setting')}
               >
-                <Link to="/global-setting">
-                  <div className="flex items-center gap-2">
+                <Link to="/global-setting" aria-disabled="true" tabIndex={-1}>
+                  <div className="flex items-center gap-2 pointer-events-none opacity-50">
                     <Settings className="text-gray-500" />
                     <span className="bg-gradient-hero bg-clip-text text-transparent">GLOBAL SETTING</span>
                   </div>
@@ -233,8 +233,8 @@ export function AppLayout() {
                 asChild
                 isActive={location.pathname.startsWith('/faq')}
               >
-                <Link to="/faq">
-                  <div className="flex items-center gap-2">
+                <Link to="/faq" aria-disabled="true" tabIndex={-1}>
+                  <div className="flex items-center gap-2 pointer-events-none opacity-50">
                     <HelpCircle className="text-gray-500" />
                     <span className="bg-gradient-hero bg-clip-text text-transparent">FAQ</span>
                   </div>
