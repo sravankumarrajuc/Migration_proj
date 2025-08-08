@@ -23,14 +23,14 @@ export const HeroSection = () => {
           {/* Badge */}
           <Badge variant="secondary" className="px-4 py-2 text-sm font-medium">
             <Zap className="w-4 h-4 mr-2" />
-            AI-Powered Enterprise Migration
+            Factspan Powered AI Migration
           </Badge>
 
           {/* Main heading */}
           <div className="space-y-4">
             <h1 className="text-5xl md:text-7xl lg:text-8xl font-bold tracking-tight">
               <span className="bg-gradient-hero bg-clip-text text-transparent">
-                AccelMigrate
+                FactiMigrate
               </span>
             </h1>
             <p className="text-xl md:text-2xl lg:text-3xl text-muted-foreground max-w-4xl mx-auto leading-relaxed">
@@ -55,7 +55,7 @@ export const HeroSection = () => {
             <ArrowRight className="w-6 h-6 text-primary animate-pulse" />
             <div className="flex items-center space-x-2 bg-gradient-accent text-accent-foreground px-4 py-2 rounded-full text-sm font-medium">
               <Zap className="w-4 h-4" />
-              AccelMigrate AI
+              FactiMigrate AI
             </div>
             <ArrowRight className="w-6 h-6 text-primary animate-pulse" />
             <div className="flex items-center space-x-2 text-muted-foreground">
