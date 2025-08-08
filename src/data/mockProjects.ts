@@ -143,13 +143,13 @@ export const dialectDisplayNames = {
 export const getStatusColor = (status: Project['status']) => {
   switch (status) {
     case 'completed':
-      return 'bg-emerald-100 text-emerald-800 border-emerald-200';
+      return 'bg-green-500 text-white';
     case 'in-progress':
-      return 'bg-blue-100 text-blue-800 border-blue-200';
+      return 'bg-orange-500 text-white';
     case 'failed':
-      return 'bg-red-100 text-red-800 border-red-200';
+      return 'bg-red-500 text-white';
     default:
-      return 'bg-gray-100 text-gray-800 border-gray-200';
+      return 'bg-gray-500 text-white';
   }
 };
 
