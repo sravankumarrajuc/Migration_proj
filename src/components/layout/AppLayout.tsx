@@ -116,6 +116,7 @@ export function AppLayout() {
               <SidebarMenuButton
                 asChild
                 isActive={location.pathname.startsWith('/projects')}
+                tooltip="SCHEMA ANALYZER"
               >
                 <Link to="/projects">
                   <div className="flex items-center gap-2">
@@ -134,6 +135,7 @@ export function AppLayout() {
               <SidebarMenuButton
                 asChild
                 isActive={location.pathname.startsWith('/code-generation')}
+                tooltip="REPORT CODE MIGRATION"
               >
                 <Link to="/code-generation">
                   <div className="flex items-center gap-2">
@@ -152,6 +154,7 @@ export function AppLayout() {
               <SidebarMenuButton
                 asChild
                 isActive={location.pathname.startsWith('/gen-ai-studio')}
+                tooltip="GEN-AI STUDIO"
               >
                 <Link to="/gen-ai-studio" aria-disabled="true" tabIndex={-1}>
                   <div className="flex items-center gap-2 pointer-events-none opacity-50">
@@ -170,6 +173,7 @@ export function AppLayout() {
               <SidebarMenuButton
                 asChild
                 isActive={location.pathname.startsWith('/factillm-copilot')}
+                tooltip="FACTILLM CO-PILOT"
               >
                 <Link to="/factillm-copilot" aria-disabled="true" tabIndex={-1}>
                   <div className="flex items-center gap-2 pointer-events-none opacity-50">
@@ -188,6 +192,7 @@ export function AppLayout() {
               <SidebarMenuButton
                 asChild
                 isActive={location.pathname.startsWith('/factillm-evaluate')}
+                tooltip="FACTILLM EVALUATE"
               >
                 <Link to="/factillm-evaluate" aria-disabled="true" tabIndex={-1}>
                   <div className="flex items-center gap-2 pointer-events-none opacity-50">
@@ -206,6 +211,7 @@ export function AppLayout() {
               <SidebarMenuButton
                 asChild
                 isActive={location.pathname.startsWith('/history')}
+                tooltip="HISTORY"
               >
                 <Link to="/history" aria-disabled="true" tabIndex={-1}>
                   <div className="flex items-center gap-2 pointer-events-none opacity-50">
@@ -219,6 +225,7 @@ export function AppLayout() {
               <SidebarMenuButton
                 asChild
                 isActive={location.pathname.startsWith('/global-setting')}
+                tooltip="GLOBAL SETTING"
               >
                 <Link to="/global-setting" aria-disabled="true" tabIndex={-1}>
                   <div className="flex items-center gap-2 pointer-events-none opacity-50">
@@ -232,6 +239,7 @@ export function AppLayout() {
               <SidebarMenuButton
                 asChild
                 isActive={location.pathname.startsWith('/faq')}
+                tooltip="FAQ"
               >
                 <Link to="/faq" aria-disabled="true" tabIndex={-1}>
                   <div className="flex items-center gap-2 pointer-events-none opacity-50">
