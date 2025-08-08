@@ -20,7 +20,7 @@ export function Validation() {
 
   const handleCompleteMigration = () => {
     completeProject();
-    alert('Migration completed successfully!');
+    alert('Mapping completed successfully!');
     navigate('/projects'); // Or wherever you want to redirect after completion
   };
 
@@ -46,7 +46,7 @@ export function Validation() {
             <div>
               <h1 className="text-3xl font-bold text-foreground">Validation & QA</h1>
               <p className="text-muted-foreground">
-                Compare legacy and migrated outputs to ensure data integrity
+                Compare legacy and mapping outputs to ensure data integrity
               </p>
             </div>
           </div>
@@ -135,7 +135,7 @@ export function Validation() {
               disabled={false} // Always enabled as per user's request to hide comparison
               className="min-w-[200px]"
             >
-              Complete Migration
+              Complete Mapping
             </Button>
           </div>
 

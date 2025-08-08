@@ -24,7 +24,9 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <Routes>
-            <Route path="/" element={<Index />} />
+            <Route path="/" element={<AppLayout />}>
+              <Route index element={<Index />} />
+            </Route>
             <Route path="/projects" element={<AppLayout />}>
               <Route index element={<Projects />} />
             </Route>
@@ -46,6 +48,13 @@ const App = () => (
             </Route>
             <Route path="/validation/:projectId" element={<AppLayout />}>
               <Route index element={<Validation />} />
+            </Route>
+            {/* New routes for sidebar items */}
+            <Route path="/schema-analyzer" element={<AppLayout />}>
+              <Route index element={<NotFound />} /> {/* Placeholder */}
+            </Route>
+            <Route path="/report-code-migration" element={<AppLayout />}>
+              <Route index element={<NotFound />} /> {/* Placeholder */}
             </Route>
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />

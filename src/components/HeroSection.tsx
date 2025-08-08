@@ -65,7 +65,7 @@ export const HeroSection = () => {
           </div>
 
           {/* CTA buttons */}
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
+          {/* <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
             <Link to="/projects">
               <Button variant="hero" size="lg" className="px-8 py-6 text-lg">
                 Schema Analyzer
@@ -76,7 +76,7 @@ export const HeroSection = () => {
                 Report Code Migration
               </Button>
             </Link>
-          </div>
+          </div> */}
 
           {/* Trust indicators */}
           {/* <div className="pt-8 text-center">
