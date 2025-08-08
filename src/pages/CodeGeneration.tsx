@@ -235,7 +235,7 @@ export function CodeGeneration() {
                 <div className={`grid grid-cols-1 ${sourceFiles.length > 0 ? 'md:grid-cols-2' : ''} gap-3 mb-4`}>
                   <Card className={`${sourceFiles.length === 0 ? 'md:col-span-2' : ''}`}>
                     <CardHeader>
-                      <CardTitle className="text-lg">Upload Source File</CardTitle>
+                      <CardTitle className="text-lg">Upload Report Source File</CardTitle>
                       <CardDescription>Drag and drop your source file here, or click to select.</CardDescription>
                     </CardHeader>
                     <CardContent>
