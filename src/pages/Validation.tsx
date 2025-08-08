@@ -46,7 +46,7 @@ export function Validation() {
             <div>
               <h1 className="text-3xl font-bold text-foreground">Validation & QA</h1>
               <p className="text-muted-foreground">
-                Compare legacy and migrated outputs to ensure data integrity
+                Compare legacy and mapping outputs to ensure data integrity
               </p>
             </div>
           </div>

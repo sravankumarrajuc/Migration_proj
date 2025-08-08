@@ -30,7 +30,7 @@ const steps = [
   {
     id: 'validation' as MigrationPhase,
     name: 'Validation',
-    description: 'Validate migration outputs',
+    description: 'Validate mapping outputs',
     icon: Shield,
   },
 ];
