@@ -28,12 +28,12 @@ export const HeroSection = () => {
 
           {/* Main heading */}
           <div className="space-y-4">
-            <h1 className="text-5xl md:text-7xl lg:text-8xl font-bold tracking-tight">
+            <h1 className="text-2xl md:text-4xl lg:text-4xl font-bold tracking-tight">
               <span className="bg-gradient-hero bg-clip-text text-transparent">
                 FactiMigrate
               </span>
             </h1>
-            <p className="text-xl md:text-2xl lg:text-3xl text-muted-foreground max-w-4xl mx-auto leading-relaxed">
+            <p className="text-xl text-muted-foreground max-w-4xl mx-auto leading-relaxed">
               No-code AI accelerator that automates enterprise data migrations from legacy schemas to cloud warehouses
             </p>
           </div>
