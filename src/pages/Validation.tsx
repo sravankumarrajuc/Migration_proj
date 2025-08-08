@@ -20,7 +20,7 @@ export function Validation() {
 
   const handleCompleteMigration = () => {
     completeProject();
-    alert('Migration completed successfully!');
+    alert('Mapping completed successfully!');
     navigate('/projects'); // Or wherever you want to redirect after completion
   };
 
@@ -135,7 +135,7 @@ export function Validation() {
               disabled={false} // Always enabled as per user's request to hide comparison
               className="min-w-[200px]"
             >
-              Complete Migration
+              Complete Mapping
             </Button>
           </div>
 

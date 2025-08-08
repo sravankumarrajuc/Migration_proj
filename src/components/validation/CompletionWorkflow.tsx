@@ -71,7 +71,7 @@ export function CompletionWorkflow({
     {
       id: 'stakeholderApproval',
       label: 'Stakeholder Sign-off',
-      description: 'Business stakeholders have approved migration results',
+      description: 'Business stakeholders have approved mapping results',
       completed: completionChecklist.stakeholderApproval,
       required: true,
     },
@@ -125,9 +125,9 @@ export function CompletionWorkflow({
           <Trophy className="h-8 w-8 text-green-600" />
         </div>
         <div>
-          <h3 className="text-xl font-semibold">Migration Complete!</h3>
+          <h3 className="text-xl font-semibold">Mapping Complete!</h3>
           <p className="text-muted-foreground">
-            Congratulations! Your data migration has been successfully validated.
+            Congratulations! Your data mapping has been successfully validated.
           </p>
         </div>
       </div>
@@ -205,7 +205,7 @@ export function CompletionWorkflow({
         <Label htmlFor="notes">Additional Notes (Optional)</Label>
         <Textarea
           id="notes"
-          placeholder="Add any additional notes or comments about the migration..."
+          placeholder="Add any additional notes or comments about the mapping..."
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
         />
@@ -219,7 +219,7 @@ export function CompletionWorkflow({
           onClick={handleCompleteProject}
           disabled={!allRequiredComplete || isCompleting}
         >
-          {isCompleting ? 'Completing...' : 'Finalize Migration'}
+          {isCompleting ? 'Completing...' : 'Finalize Mapping'}
           <ArrowRight className="h-4 w-4 ml-2" />
         </Button>
       </div>
@@ -233,9 +233,9 @@ export function CompletionWorkflow({
           <Star className="h-8 w-8 text-yellow-600" />
         </div>
         <div>
-          <h3 className="text-xl font-semibold">Migration Project Complete!</h3>
+          <h3 className="text-xl font-semibold">Mapping Project Complete!</h3>
           <p className="text-muted-foreground">
-            Your migration has been successfully completed and is ready for production.
+            Your mapping has been successfully completed and is ready for production.
           </p>
         </div>
       </div>
@@ -273,7 +273,7 @@ export function CompletionWorkflow({
         <div className="flex items-start gap-3">
           <CheckCircle className="h-5 w-5 text-green-500 mt-0.5" />
           <div>
-            <div className="font-medium text-green-800">Migration Successful</div>
+            <div className="font-medium text-green-800">Mapping Successful</div>
             <div className="text-sm text-green-700">
               Project "{project.name}" has been completed with {validationStats.accuracy}% accuracy.
               All validation checks passed successfully.
@@ -303,9 +303,9 @@ export function CompletionWorkflow({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Complete Migration Project</DialogTitle>
+          <DialogTitle>Complete Mapping Project</DialogTitle>
           <DialogDescription>
-            Finalize your migration project and prepare for production deployment
+            Finalize your mapping project and prepare for production deployment
           </DialogDescription>
         </DialogHeader>
 
