@@ -383,16 +383,27 @@ function SidebarContentWrapper({ location, userProfile, handleSignOut, login }: 
         {userProfile.authenticated ? (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className={cn("flex items-center", !isCollapsed && "space-x-2")}>
-                <div className="h-8 w-8 rounded-full bg-gradient-accent flex items-center justify-center">
+              <Button
+                variant="ghost"
+                className={cn(
+                  "flex items-center",
+                  isCollapsed ? "p-0 h-8 w-8" : "space-x-2"
+                )}
+              >
+                <div className="relative h-8 w-8 rounded-full bg-gradient-accent flex items-center justify-center">
                   <User className="h-4 w-4 text-white" />
+                  <ChevronDown
+                    className={cn(
+                      "absolute right-0 bottom-0 h-3 w-3 text-sidebar-foreground",
+                      isCollapsed ? "block" : "hidden"
+                    )}
+                  />
                 </div>
-                <span className={isCollapsed ? 'hidden' : 'sm:inline-block'}>{userProfile.name}</span>
-                <ChevronDown className={cn('h-4 w-4', !isCollapsed && 'hidden')} />
+                <span className={isCollapsed ? "hidden" : "sm:inline-block"}>{userProfile.name}</span>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuLabel>Data Engineer</DropdownMenuLabel>
+              <DropdownMenuLabel>{userProfile.name}</DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem>
                 <User className="mr-2 h-4 w-4" />
@@ -410,11 +421,15 @@ function SidebarContentWrapper({ location, userProfile, handleSignOut, login }: 
             </DropdownMenuContent>
           </DropdownMenu>
         ) : (
-          <Button onClick={() => login()} variant="default" className={cn("flex items-center", !isCollapsed && "space-x-2")}>
+          <Button
+            onClick={() => login()}
+            variant="default"
+            className={cn("flex items-center", isCollapsed ? "p-0 h-8 w-8" : "space-x-2")}
+          >
             <div className="h-8 w-8 rounded-full bg-gradient-accent flex items-center justify-center">
               <User className="h-4 w-4 text-white" />
             </div>
-            <span className={isCollapsed ? 'hidden' : 'sm:inline-block'}>Sign In</span>
+            <span className={isCollapsed ? "hidden" : "sm:inline-block"}>Sign In</span>
           </Button>
         )}
       </SidebarFooter>
