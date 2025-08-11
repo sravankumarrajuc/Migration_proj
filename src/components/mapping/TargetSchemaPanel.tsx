@@ -3,10 +3,11 @@ import { useMigrationStore } from '@/store/migrationStore';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Search, Database, Table, CheckCircle, Circle, Star, AlertTriangle } from 'lucide-react';
+import { Search, Database, Table, CheckCircle, Circle, Star, AlertTriangle, ChevronDown, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export function TargetSchemaPanel() {
@@ -153,90 +154,110 @@ export function TargetSchemaPanel() {
                       <Badge variant="outline" className="text-xs">
                         {table.dialect}
                       </Badge>
-                      <div 
-                        data-expand-trigger
-                        className="p-1 hover:bg-muted rounded"
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 w-6 p-0"
                         onClick={(e) => {
                           e.stopPropagation();
                           toggleTableExpansion(table.id);
                         }}
+                        data-expand-trigger
                       >
-                        {isExpanded ? '−' : '+'}
-                      </div>
+                        {isExpanded ? (
+                          <ChevronDown className="h-4 w-4" />
+                        ) : (
+                          <ChevronRight className="h-4 w-4" />
+                        )}
+                      </Button>
                     </div>
                   </div>
 
                   {isExpanded && (
                     <div className="ml-4 space-y-1">
-                      {table.columns.map((column) => {
-                        const mappingStatus = getColumnMappingStatus(table.id, column.id);
-                        const isRequired = isRequiredField(column);
-                        const isSelected = mappingState.selectedTargetColumns.includes(column.id);
-                        
-                        return (
-                          <div
-                            key={column.id}
-                            className={cn(
-                              "flex items-center justify-between p-2 rounded border",
-                              mappingStatus === 'mapped' 
-                                ? "border-green-200 bg-green-50" 
-                                : mappingStatus === 'pending'
-                                ? "border-yellow-200 bg-yellow-50"
-                                : isRequired 
-                                ? "border-red-200 bg-red-50"
-                                : isSelected
-                                ? "border-blue-200 bg-blue-50"
-                                : "border-border"
-                            )}
-                          >
-                            <div className="flex items-center gap-2">
-                              <Checkbox
-                                checked={isSelected}
-                                onCheckedChange={() => toggleTargetColumnSelection(column.id)}
-                                className="h-4 w-4"
-                              />
-                              {mappingStatus === 'mapped' ? (
-                                <CheckCircle className="h-4 w-4 text-green-600" />
-                              ) : isRequired ? (
-                                <AlertTriangle className="h-4 w-4 text-red-600" />
-                              ) : (
-                                <Circle className="h-4 w-4 text-muted-foreground" />
+                      {table.columns && table.columns.length > 0 ? (
+                        table.columns.map((column) => {
+                          const mappingStatus = getColumnMappingStatus(table.id, column.id);
+                          const isRequired = isRequiredField(column);
+                          const isSelected = mappingState.selectedTargetColumns.includes(column.id);
+                          
+                          return (
+                            <div
+                              key={column.id}
+                              className={cn(
+                                "flex items-center justify-between p-2 rounded border",
+                                mappingStatus === 'mapped' 
+                                  ? "border-green-200 bg-green-50" 
+                                  : mappingStatus === 'pending'
+                                  ? "border-yellow-200 bg-yellow-50"
+                                  : isRequired 
+                                  ? "border-red-200 bg-red-50"
+                                  : isSelected
+                                  ? "border-blue-200 bg-blue-50"
+                                  : "border-border"
                               )}
-                              <div>
-                                <div className="flex items-center gap-2">
-                                  <span className="font-medium text-sm">{column.name}</span>
-                                  {isRequired && (
-                                    <Star className="h-3 w-3 text-red-500" />
-                                  )}
-                                </div>
-                                <div className="text-xs text-muted-foreground">
-                                  {column.dataType}
-                                  {!column.nullable && (
-                                    <Badge variant="outline" className="ml-2 text-xs">
-                                      NOT NULL
-                                    </Badge>
-                                  )}
-                                  {column.isPrimaryKey && (
-                                    <Badge variant="outline" className="ml-2 text-xs">
-                                      PK
-                                    </Badge>
-                                  )}
-                                  {column.isForeignKey && (
-                                    <Badge variant="outline" className="ml-2 text-xs">
-                                      FK
-                                    </Badge>
+                            >
+                              <div className="flex items-center gap-2">
+                                <Checkbox
+                                  checked={isSelected}
+                                  onCheckedChange={(checked) => {
+                                    console.log('Checkbox clicked for target column:', column.id, 'checked:', checked);
+                                    toggleTargetColumnSelection(column.id);
+                                  }}
+                                  className="h-4 w-4"
+                                />
+                                {mappingStatus === 'mapped' ? (
+                                  <CheckCircle className="h-4 w-4 text-green-600" />
+                                ) : isRequired ? (
+                                  <AlertTriangle className="h-4 w-4 text-red-600" />
+                                ) : (
+                                  <Circle className="h-4 w-4 text-muted-foreground" />
+                                )}
+                                <div>
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-medium text-sm">{column.name}</span>
+                                    {isRequired && (
+                                      <Star className="h-3 w-3 text-red-500" />
+                                    )}
+                                  </div>
+                                  <div className="text-xs text-muted-foreground">
+                                    {column.dataType}
+                                    {!column.nullable && (
+                                      <Badge variant="outline" className="ml-2 text-xs">
+                                        NOT NULL
+                                      </Badge>
+                                    )}
+                                    {column.isPrimaryKey && (
+                                      <Badge variant="outline" className="ml-2 text-xs">
+                                        PK
+                                      </Badge>
+                                    )}
+                                    {column.isForeignKey && (
+                                      <Badge variant="outline" className="ml-2 text-xs">
+                                        FK
+                                      </Badge>
+                                    )}
+                                  </div>
+                                  {column.description && (
+                                    <div className="text-xs text-muted-foreground mt-1">
+                                      {column.description}
+                                    </div>
                                   )}
                                 </div>
                               </div>
+                              {isRequired && mappingStatus === 'unmapped' && (
+                                <Badge variant="destructive" className="text-xs">
+                                  Required
+                                </Badge>
+                              )}
                             </div>
-                            {isRequired && mappingStatus === 'unmapped' && (
-                              <Badge variant="destructive" className="text-xs">
-                                Required
-                              </Badge>
-                            )}
-                          </div>
-                        );
-                      })}
+                          );
+                        })
+                      ) : (
+                        <div className="text-sm text-muted-foreground p-2">
+                          No columns found for this table
+                        </div>
+                      )}
                     </div>
                   )}
 

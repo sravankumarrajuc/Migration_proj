@@ -492,38 +492,35 @@ export const useMigrationStore = create<MigrationState>()(
         set((state) => {
           console.log('Updating field mapping:', mappingId, updates);
           
+          // Update suggestions array
           const updatedSuggestions = state.mappingState.suggestions.map(s =>
             s.id === mappingId ? { ...s, ...updates } : s
           );
           
           console.log('Updated suggestions status:', updatedSuggestions.map(s => ({ id: s.id, status: s.status })));
           
-          if (!state.mappingState.currentTableMapping) {
-            return {
-              mappingState: {
-                ...state.mappingState,
-                suggestions: updatedSuggestions,
-              },
-            };
-          }
+          // Update all mappings array - this is crucial for UI reactivity
+          const updatedAllMappings = state.mappingState.allMappings.map(tableMapping => ({
+            ...tableMapping,
+            fieldMappings: tableMapping.fieldMappings.map(fm =>
+              fm.id === mappingId ? { ...fm, ...updates } : fm
+            ),
+          }));
           
-          const updatedMapping = {
+          // Update current table mapping if it exists
+          const updatedCurrentTableMapping = state.mappingState.currentTableMapping ? {
             ...state.mappingState.currentTableMapping,
             fieldMappings: state.mappingState.currentTableMapping.fieldMappings.map(fm =>
               fm.id === mappingId ? { ...fm, ...updates } : fm
             ),
-          };
+          } : null;
           
           return {
             mappingState: {
               ...state.mappingState,
-              currentTableMapping: updatedMapping,
+              currentTableMapping: updatedCurrentTableMapping,
               suggestions: updatedSuggestions,
-              allMappings: state.mappingState.allMappings.map(m =>
-                m.sourceTableId === updatedMapping.sourceTableId && m.targetTableId === updatedMapping.targetTableId
-                  ? updatedMapping
-                  : m
-              ),
+              allMappings: updatedAllMappings,
             },
           };
         });
@@ -531,22 +528,34 @@ export const useMigrationStore = create<MigrationState>()(
 
       removeFieldMapping: (mappingId) => {
         set((state) => {
-          if (!state.mappingState.currentTableMapping) return state;
+          console.log('Removing field mapping:', mappingId);
           
-          const updatedMapping = {
+          // Remove from suggestions array
+          const updatedSuggestions = state.mappingState.suggestions.filter(s => s.id !== mappingId);
+          
+          // Remove from all mappings array - this is crucial for UI reactivity
+          const updatedAllMappings = state.mappingState.allMappings.map(tableMapping => ({
+            ...tableMapping,
+            fieldMappings: tableMapping.fieldMappings.filter(fm => fm.id !== mappingId),
+          }));
+          
+          // Update current table mapping if it exists
+          const updatedCurrentTableMapping = state.mappingState.currentTableMapping ? {
             ...state.mappingState.currentTableMapping,
             fieldMappings: state.mappingState.currentTableMapping.fieldMappings.filter(fm => fm.id !== mappingId),
-          };
+          } : null;
+          
+          console.log('Updated mappings after removal:', {
+            suggestionsCount: updatedSuggestions.length,
+            allMappingsCount: updatedAllMappings.reduce((sum, tm) => sum + tm.fieldMappings.length, 0)
+          });
           
           return {
             mappingState: {
               ...state.mappingState,
-              currentTableMapping: updatedMapping,
-              allMappings: state.mappingState.allMappings.map(m =>
-                m.sourceTableId === updatedMapping.sourceTableId && m.targetTableId === updatedMapping.targetTableId
-                  ? updatedMapping
-                  : m
-              ),
+              currentTableMapping: updatedCurrentTableMapping,
+              suggestions: updatedSuggestions,
+              allMappings: updatedAllMappings,
             },
           };
         });
@@ -572,10 +581,60 @@ export const useMigrationStore = create<MigrationState>()(
                 )]
               : suggestions; // If no currentTableMapping, just use suggestions
             
+            // Create a comprehensive allMappings array with all suggestions grouped by table pairs
+            const tableMappingsMap = new Map<string, TableMapping>();
+            
+            // Group suggestions by source-target table pairs
+            suggestions.forEach(suggestion => {
+              const key = `${suggestion.sourceTableId}-${suggestion.targetTableId}`;
+              if (!tableMappingsMap.has(key)) {
+                tableMappingsMap.set(key, {
+                  sourceTableId: suggestion.sourceTableId,
+                  targetTableId: suggestion.targetTableId,
+                  fieldMappings: [],
+                  completionPercentage: 0,
+                  requiredFieldsCovered: 0,
+                  totalRequiredFields: 0,
+                });
+              }
+              tableMappingsMap.get(key)!.fieldMappings.push(suggestion);
+            });
+            
+            // Convert map to array and merge with existing mappings
+            const newTableMappings = Array.from(tableMappingsMap.values());
+            const updatedAllMappings = [...state.mappingState.allMappings];
+            
+            // Merge new mappings with existing ones
+            newTableMappings.forEach(newMapping => {
+              const existingIndex = updatedAllMappings.findIndex(
+                m => m.sourceTableId === newMapping.sourceTableId && m.targetTableId === newMapping.targetTableId
+              );
+              
+              if (existingIndex >= 0) {
+                // Merge field mappings, avoiding duplicates
+                const existingMapping = updatedAllMappings[existingIndex];
+                const mergedFieldMappings = [...existingMapping.fieldMappings];
+                
+                newMapping.fieldMappings.forEach(newFM => {
+                  if (!mergedFieldMappings.some(fm => fm.id === newFM.id)) {
+                    mergedFieldMappings.push(newFM);
+                  }
+                });
+                
+                updatedAllMappings[existingIndex] = {
+                  ...existingMapping,
+                  fieldMappings: mergedFieldMappings,
+                };
+              } else {
+                updatedAllMappings.push(newMapping);
+              }
+            });
+            
             return {
               mappingState: {
                 ...state.mappingState,
                 suggestions,
+                allMappings: updatedAllMappings,
                 currentTableMapping: currentTableMapping ? {
                   ...currentTableMapping,
                   fieldMappings: updatedFieldMappings,

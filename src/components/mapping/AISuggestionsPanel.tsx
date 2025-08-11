@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
-import { Sparkles, Check, X, CheckCircle2, ArrowRight, Zap } from 'lucide-react';
+import { Sparkles, Check, X, CheckCircle2, ArrowRight, Zap, Loader2 } from 'lucide-react';
 import { getConfidenceBadgeColor, getTransformationIcon } from '@/data/mockMappingData.ts';
 import { cn } from '@/lib/utils';
 
@@ -28,21 +28,29 @@ export function AISuggestionsPanel({ onClose, showAllSuggestions }: AISuggestion
     setDisplayAll(showAllSuggestions);
   }, [showAllSuggestions]);
 
-  const highConfidenceSuggestions = mappingState.suggestions.filter(s => s.confidence >= 90);
-  const mediumConfidenceSuggestions = mappingState.suggestions.filter(s => s.confidence >= 80 && s.confidence < 90);
-  const lowConfidenceSuggestions = mappingState.suggestions.filter(s => s.confidence < 80);
+  // Get all field mappings from allMappings array to ensure synchronization
+  const allFieldMappings = mappingState.allMappings.flatMap(tableMapping => tableMapping.fieldMappings);
+  
+  // Use allFieldMappings as the source of truth, fallback to suggestions if empty
+  const currentSuggestions = allFieldMappings.length > 0 ? allFieldMappings : mappingState.suggestions;
+
+  const highConfidenceSuggestions = currentSuggestions.filter(s => s.confidence >= 90);
+  const mediumConfidenceSuggestions = currentSuggestions.filter(s => s.confidence >= 80 && s.confidence < 90);
+  const lowConfidenceSuggestions = currentSuggestions.filter(s => s.confidence < 80);
 
 
   const getSourceColumn = (sourceTableId: string, sourceColumnId: string) => {
     if (!discoveryState.lineageGraph) return null;
-    const table = discoveryState.lineageGraph.tables.find(t => t.name === sourceTableId);
-    return table?.columns.find(c => c.name === sourceColumnId) || null;
+    // Try both id and name matching for flexibility
+    const table = discoveryState.lineageGraph.tables.find(t => t.id === sourceTableId || t.name === sourceTableId);
+    return table?.columns.find(c => c.id === sourceColumnId || c.name === sourceColumnId) || null;
   };
 
   const getTargetColumn = (targetTableId: string, targetColumnId: string) => {
     if (!discoveryState.lineageGraph) return null;
-    const table = discoveryState.lineageGraph.tables.find(t => t.name === targetTableId);
-    return table?.columns.find(c => c.name === targetColumnId) || null;
+    // Try both id and name matching for flexibility
+    const table = discoveryState.lineageGraph.tables.find(t => t.id === targetTableId || t.name === targetTableId);
+    return table?.columns.find(c => c.id === targetColumnId || c.name === targetColumnId) || null;
   };
 
   const handleAccept = (mappingId: string) => {
@@ -131,7 +139,12 @@ export function AISuggestionsPanel({ onClose, showAllSuggestions }: AISuggestion
                 <div className="flex items-center gap-2 pt-2">
                   <Button
                     size="sm"
-                    onClick={() => handleAccept(suggestion.id)}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      console.log('Approve button clicked for suggestion:', suggestion.id);
+                      handleAccept(suggestion.id);
+                    }}
                     className="gap-1"
                     variant={suggestion.status === 'approved' ? 'default' : 'outline'}
                     disabled={suggestion.status === 'approved' || suggestion.status === 'rejected'}
@@ -141,7 +154,12 @@ export function AISuggestionsPanel({ onClose, showAllSuggestions }: AISuggestion
                   </Button>
                   <Button
                     size="sm"
-                    onClick={() => handleReject(suggestion.id)}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      console.log('Reject button clicked for suggestion:', suggestion.id);
+                      handleReject(suggestion.id);
+                    }}
                     className="gap-1"
                     variant={suggestion.status === 'rejected' ? 'destructive' : 'outline'}
                     disabled={suggestion.status === 'approved' || suggestion.status === 'rejected'}
@@ -152,7 +170,13 @@ export function AISuggestionsPanel({ onClose, showAllSuggestions }: AISuggestion
                   {suggestion.status === 'rejected' && (
                     <Button
                       size="sm"
-                      onClick={() => updateFieldMapping(suggestion.id, { status: 'suggested' })}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        console.log('Revert reject button clicked for suggestion:', suggestion.id);
+                        updateFieldMapping(suggestion.id, { status: 'suggested' });
+                      }}
+                      variant="outline"
                     >
                       Revert Reject
                     </Button>
@@ -182,7 +206,12 @@ export function AISuggestionsPanel({ onClose, showAllSuggestions }: AISuggestion
           <div className="flex items-center gap-2">
             <Button
               size="sm"
-              onClick={bulkAcceptHighConfidence}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('Bulk accept high confidence clicked');
+                bulkAcceptHighConfidence();
+              }}
               className="gap-2"
             >
               <CheckCircle2 className="h-4 w-4" />
@@ -195,7 +224,24 @@ export function AISuggestionsPanel({ onClose, showAllSuggestions }: AISuggestion
       <CardContent className="flex-1 overflow-hidden p-0">
         <ScrollArea className="h-full">
           <div className="p-4 space-y-6">
-            {mappingState.suggestions.length === 0 ? (
+            {mappingState.isProcessing ? (
+              <div className="text-center py-8">
+                <Loader2 className="h-12 w-12 text-primary animate-spin mx-auto mb-4" />
+                <h3 className="text-lg font-semibold mb-2">Generating AI Suggestions</h3>
+                <p className="text-muted-foreground mb-2">
+                  {mappingState.currentStep}
+                </p>
+                <div className="w-full bg-muted rounded-full h-2 mb-4">
+                  <div 
+                    className="bg-primary h-2 rounded-full transition-all duration-300" 
+                    style={{ width: `${mappingState.progress}%` }}
+                  />
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  {Math.round(mappingState.progress)}% complete
+                </p>
+              </div>
+            ) : currentSuggestions.length === 0 ? (
               <div className="text-center py-8">
                 <Sparkles className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                 <h3 className="text-lg font-semibold mb-2">No Suggestions Available</h3>
