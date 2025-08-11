@@ -217,7 +217,7 @@ export function CodeGeneration() {
                 }
               }}>
                 <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select Completed Migration Project" />
+                  <SelectValue placeholder="Select Completed Schema Mapping" />
                 </SelectTrigger>
                 <SelectContent>
                   {completedProjects.map((project) => (
@@ -423,7 +423,7 @@ export function CodeGeneration() {
                         </Card>
     
                         {/* Platform Generated Codes */}
-                        <Card>
+                        <Card className="hidden">
                           <CardHeader>
                             <CardTitle className="text-base">Generated Platforms</CardTitle>
                           </CardHeader>
@@ -449,7 +449,7 @@ export function CodeGeneration() {
                     </div>
     
                     {/* Action Buttons */}
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between pt-4">
                       <div className="flex items-center gap-4">
                         <Button
                           variant="outline"
