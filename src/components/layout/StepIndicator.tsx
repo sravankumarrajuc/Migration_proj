@@ -13,13 +13,13 @@ const steps = [
     id: 'upload' as MigrationPhase,
     name: 'Schema Upload',
     description: 'Upload source & target schemas',
-    icon: Check,
+    icon: Upload,
   },
   {
     id: 'discovery' as MigrationPhase,
     name: 'Discovery',
     description: 'Analyze data lineage & relationships',
-    icon: Check,
+    icon: Search,
   },
   {
     id: 'mapping' as MigrationPhase,

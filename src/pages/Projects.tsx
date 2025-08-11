@@ -53,14 +53,18 @@ export default function Projects() {
       case 'mapping':
         navigate(`/mapping/${project.id}`);
         break;
-      case 'codegen':
-        navigate(`/codegen/${project.id}`);
-        break;
       case 'validation':
         navigate(`/validation/${project.id}`);
         break;
       default:
-        navigate(`/upload/${project.id}`);
+        // For completed projects, navigate to the most appropriate phase
+        if (project.status === 'completed') {
+          // If project is completed, go to validation phase to show results
+          navigate(`/validation/${project.id}`);
+        } else {
+          // For draft or other statuses, start from upload
+          navigate(`/upload/${project.id}`);
+        }
     }
   };
 
