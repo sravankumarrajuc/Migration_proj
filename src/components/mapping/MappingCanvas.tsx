@@ -83,14 +83,16 @@ export function MappingCanvas({ tableMappings, showAllText }: MappingCanvasProps
 
   const getSourceColumn = (sourceTableId: string, sourceColumnId: string) => {
     if (!discoveryState.lineageGraph) return null;
-    const table = discoveryState.lineageGraph.tables.find(t => t.id === sourceTableId);
-    return table?.columns.find(c => c.id === sourceColumnId) || null;
+    // Try both id and name matching for flexibility
+    const table = discoveryState.lineageGraph.tables.find(t => t.id === sourceTableId || t.name === sourceTableId);
+    return table?.columns.find(c => c.id === sourceColumnId || c.name === sourceColumnId) || null;
   };
 
   const getTargetColumn = (targetTableId: string, targetColumnId: string) => {
     if (!discoveryState.lineageGraph) return null;
-    const table = discoveryState.lineageGraph.tables.find(t => t.id === targetTableId);
-    return table?.columns.find(c => c.id === targetColumnId) || null;
+    // Try both id and name matching for flexibility
+    const table = discoveryState.lineageGraph.tables.find(t => t.id === targetTableId || t.name === targetTableId);
+    return table?.columns.find(c => c.id === targetColumnId || c.name === targetColumnId) || null;
   };
 
   const getTransformationDetails = (type: TransformationType) => {

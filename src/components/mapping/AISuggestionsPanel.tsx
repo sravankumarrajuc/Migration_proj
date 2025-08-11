@@ -35,14 +35,16 @@ export function AISuggestionsPanel({ onClose, showAllSuggestions }: AISuggestion
 
   const getSourceColumn = (sourceTableId: string, sourceColumnId: string) => {
     if (!discoveryState.lineageGraph) return null;
-    const table = discoveryState.lineageGraph.tables.find(t => t.name === sourceTableId);
-    return table?.columns.find(c => c.name === sourceColumnId) || null;
+    // Try both id and name matching for flexibility
+    const table = discoveryState.lineageGraph.tables.find(t => t.id === sourceTableId || t.name === sourceTableId);
+    return table?.columns.find(c => c.id === sourceColumnId || c.name === sourceColumnId) || null;
   };
 
   const getTargetColumn = (targetTableId: string, targetColumnId: string) => {
     if (!discoveryState.lineageGraph) return null;
-    const table = discoveryState.lineageGraph.tables.find(t => t.name === targetTableId);
-    return table?.columns.find(c => c.name === targetColumnId) || null;
+    // Try both id and name matching for flexibility
+    const table = discoveryState.lineageGraph.tables.find(t => t.id === targetTableId || t.name === targetTableId);
+    return table?.columns.find(c => c.id === targetColumnId || c.name === targetColumnId) || null;
   };
 
   const handleAccept = (mappingId: string) => {
@@ -131,7 +133,12 @@ export function AISuggestionsPanel({ onClose, showAllSuggestions }: AISuggestion
                 <div className="flex items-center gap-2 pt-2">
                   <Button
                     size="sm"
-                    onClick={() => handleAccept(suggestion.id)}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      console.log('Approve button clicked for suggestion:', suggestion.id);
+                      handleAccept(suggestion.id);
+                    }}
                     className="gap-1"
                     variant={suggestion.status === 'approved' ? 'default' : 'outline'}
                     disabled={suggestion.status === 'approved' || suggestion.status === 'rejected'}
@@ -141,7 +148,12 @@ export function AISuggestionsPanel({ onClose, showAllSuggestions }: AISuggestion
                   </Button>
                   <Button
                     size="sm"
-                    onClick={() => handleReject(suggestion.id)}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      console.log('Reject button clicked for suggestion:', suggestion.id);
+                      handleReject(suggestion.id);
+                    }}
                     className="gap-1"
                     variant={suggestion.status === 'rejected' ? 'destructive' : 'outline'}
                     disabled={suggestion.status === 'approved' || suggestion.status === 'rejected'}
@@ -152,7 +164,13 @@ export function AISuggestionsPanel({ onClose, showAllSuggestions }: AISuggestion
                   {suggestion.status === 'rejected' && (
                     <Button
                       size="sm"
-                      onClick={() => updateFieldMapping(suggestion.id, { status: 'suggested' })}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        console.log('Revert reject button clicked for suggestion:', suggestion.id);
+                        updateFieldMapping(suggestion.id, { status: 'suggested' });
+                      }}
+                      variant="outline"
                     >
                       Revert Reject
                     </Button>
@@ -182,7 +200,12 @@ export function AISuggestionsPanel({ onClose, showAllSuggestions }: AISuggestion
           <div className="flex items-center gap-2">
             <Button
               size="sm"
-              onClick={bulkAcceptHighConfidence}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('Bulk accept high confidence clicked');
+                bulkAcceptHighConfidence();
+              }}
               className="gap-2"
             >
               <CheckCircle2 className="h-4 w-4" />
