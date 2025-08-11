@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { ArrowRight, Zap, Link, Calculator, Code, Shuffle, Trash2, Sparkles } from 'lucide-react';
-import { getTransformationIcon, getConfidenceBadgeColor } from '@/data/mockMappingData';
+import { getConfidenceBadgeColor } from '@/data/mockMappingData';
 import { TransformationType, TableMapping, FieldMapping } from '@/types/migration';
 import { cn } from '@/lib/utils';
 
@@ -51,11 +51,14 @@ export function MappingCanvas({ tableMappings, showAllText }: MappingCanvasProps
       });
       
       filteredMappings = filteredMappings.filter(fm => {
-        const sourceColumnSelected = mappingState.selectedSourceColumns.length === 0 || 
+        // Show mapping if the source column is in the selected source columns
+        // OR if the target column is in the selected target columns
+        const sourceColumnSelected = mappingState.selectedSourceColumns.length > 0 && 
           mappingState.selectedSourceColumns.includes(fm.sourceColumnId);
-        const targetColumnSelected = mappingState.selectedTargetColumns.length === 0 || 
+        const targetColumnSelected = mappingState.selectedTargetColumns.length > 0 && 
           mappingState.selectedTargetColumns.includes(fm.targetColumnId);
         
+        // Show the mapping if either source or target column is selected
         const shouldShow = sourceColumnSelected || targetColumnSelected;
         
         console.log('Checking mapping:', {

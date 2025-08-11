@@ -45,8 +45,13 @@ export function Mapping() {
     const hasTableOrColumnSelection = mappingState.selectedTableFilter || 
       (mappingState.selectedSourceColumns.length > 0 || mappingState.selectedTargetColumns.length > 0);
     
-    const tableMappings = hasTableOrColumnSelection
-      ? mappingState.allMappings // Show all mappings when table is selected or columns are selected
+    // Show all mappings if:
+    // 1. Table or column selection is active, OR
+    // 2. AI suggestions have been generated (displayAllCanvasMappings is true)
+    const shouldShowAllMappings = hasTableOrColumnSelection || displayAllCanvasMappings;
+    
+    const tableMappings = shouldShowAllMappings
+      ? mappingState.allMappings // Show all mappings when table/column is selected OR AI suggestions generated
       : mappingState.allMappings.map(tableMapping => ({
           ...tableMapping,
           fieldMappings: tableMapping.fieldMappings.filter(fm => fm.confidence >= 90)
@@ -54,9 +59,9 @@ export function Mapping() {
     
     return {
       tableMappings,
-      showAllText: hasTableOrColumnSelection
+      showAllText: Boolean(shouldShowAllMappings)
     };
-  }, [mappingState.selectedTableFilter, mappingState.selectedSourceColumns, mappingState.selectedTargetColumns, mappingState.allMappings]);
+  }, [mappingState.selectedTableFilter, mappingState.selectedSourceColumns, mappingState.selectedTargetColumns, mappingState.allMappings, displayAllCanvasMappings]);
 
   useEffect(() => {
     if (currentPhase !== 'mapping') {
