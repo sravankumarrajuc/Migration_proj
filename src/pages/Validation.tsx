@@ -1,15 +1,19 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Download, Upload } from 'lucide-react';
+import { ArrowLeft, Download, Upload, FileSpreadsheet } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useMigrationStore } from '@/store/migrationStore';
 import { SchemaComparisonTable } from '@/components/validation/SchemaComparisonTable';
+import { generateMappingReportExcel, previewMappingReportData } from '@/utils/excelExport';
+import { useToast } from '@/hooks/use-toast';
 
 export function Validation() {
   const { projectId } = useParams();
   const navigate = useNavigate();
-  const { currentProject, setCurrentPhase, completeProject } = useMigrationStore();
+  const { currentProject, setCurrentPhase, completeProject, mappingState, initializeMappingDataForValidation } = useMigrationStore();
+  const { toast } = useToast();
+  const [isGeneratingReport, setIsGeneratingReport] = useState(false);
 
   // Set current phase to validation only if not already set
   useEffect(() => {
@@ -18,10 +22,64 @@ export function Validation() {
     }
   }, [currentProject, setCurrentPhase]);
 
+  // Initialize mapping data for validation if not already present
+  useEffect(() => {
+    initializeMappingDataForValidation();
+  }, [initializeMappingDataForValidation]);
+
   const handleCompleteMigration = () => {
     completeProject();
     alert('Mapping completed successfully!');
     navigate('/projects'); // Or wherever you want to redirect after completion
+  };
+
+  const handleGenerateReport = async () => {
+    try {
+      setIsGeneratingReport(true);
+      
+      // Get mapping data from the store
+      const tableMappings = mappingState.allMappings;
+      
+      if (!tableMappings || tableMappings.length === 0) {
+        toast({
+          title: "No Mapping Data",
+          description: "No mapping data available to generate report. Please complete the mapping phase first.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Preview the data to show summary
+      const { data, summary } = previewMappingReportData(tableMappings);
+      
+      if (data.length === 0) {
+        toast({
+          title: "No Mapping Data",
+          description: "No field mappings found to export.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Generate and download the Excel file
+      const projectName = currentProject?.name || 'Migration Project';
+      generateMappingReportExcel(tableMappings, projectName);
+      
+      toast({
+        title: "Report Generated Successfully",
+        description: `Excel report with ${summary.totalMappings} mappings has been downloaded. Average confidence: ${summary.averageConfidence}%`,
+      });
+      
+    } catch (error) {
+      console.error('Error generating report:', error);
+      toast({
+        title: "Report Generation Failed",
+        description: error instanceof Error ? error.message : "An unexpected error occurred while generating the report.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGeneratingReport(false);
+    }
   };
 
 
@@ -109,16 +167,25 @@ export function Validation() {
             </Card>
           </div>
 
-          {/* Action Buttons (Keep as is, but disable if needed based on placeholder state) */}
+          {/* Action Buttons */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <Button
                 variant="outline"
-                onClick={() => alert('Generate Report functionality is a placeholder.')}
-                disabled={true} // Disable since validation is placeholder
+                onClick={handleGenerateReport}
+                disabled={isGeneratingReport}
               >
-                <Download className="h-4 w-4 mr-2" />
-                Generate Report
+                {isGeneratingReport ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current mr-2"></div>
+                    Generating...
+                  </>
+                ) : (
+                  <>
+                    <FileSpreadsheet className="h-4 w-4 mr-2" />
+                    Generate Report
+                  </>
+                )}
               </Button>
               <Button
                 variant="outline"
