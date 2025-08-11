@@ -67,7 +67,8 @@ export function Validation() {
       
       toast({
         title: "Report Generated Successfully",
-        description: `Excel report with ${summary.totalMappings} mappings has been downloaded. Average confidence: ${summary.averageConfidence}%`,
+        // description: `Excel report with ${summary.totalMappings} mappings has been downloaded. Average confidence: ${summary.averageConfidence}%`,
+        description: `Excel report with has been downloaded.`,
       });
       
     } catch (error) {

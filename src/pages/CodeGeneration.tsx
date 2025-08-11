@@ -458,13 +458,13 @@ export function CodeGeneration() {
                         >
                           AI Optimization
                         </Button>
-                        <Button
+                        {/* <Button
                           variant="outline"
                           onClick={() => setShowExportOptions(true)}
                           disabled={!currentCode}
                         >
                           Export Options
-                        </Button>
+                        </Button> */}
                       </div>
     
                       {/* <Button
