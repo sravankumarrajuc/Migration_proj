@@ -8,7 +8,7 @@ import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { CheckCircle, AlertTriangle, Info, Zap, Eye, Code } from 'lucide-react';
 import { CodePlatform } from '@/types/migration';
-import { mockCodeOptimizations } from '@/data/mockCodeGeneration';
+import { mockCodeOptimizations, optimizedBigQuerySQL } from '@/data/mockCodeGeneration';
 import { CodeEditor } from './CodeEditor';
 
 interface CodeOptimizerProps {
@@ -69,52 +69,59 @@ export function CodeOptimizer({
     setIsOptimizing(true);
     await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate AI optimization process
 
-    let optimized = code;
+    // For BigQuery platform, use the comprehensive optimized SQL
+    if (platform === 'bigquery' && selectedOptimizations.length > 0) {
+      setOptimizedCode(optimizedBigQuerySQL);
+    } else {
+      // For other platforms, keep the original logic
+      let optimized = code;
 
-    selectedOptimizations.forEach(optId => {
-      const optimization = mockCodeOptimizations.find(opt => opt.id === optId);
-      console.log('Applying optimization:', optimization);
-      if (optimization) {
-        switch (optimization.id) {
-          case 'opt-1': // Add clustering keys for BigQuery
-            if (platform === 'bigquery') {
-              optimized = optimized.replace(
-                /CREATE OR REPLACE TABLE analytics\.claims_denorm AS\nSELECT/,
-                'CREATE OR REPLACE TABLE analytics.claims_denorm\nCLUSTER BY client_key\nAS\nSELECT'
-              );
-            }
-            break;
-          case 'opt-2': // Optimize date partitioning
-            if (platform === 'bigquery') {
-              optimized = optimized.replace(
-                /CREATE OR REPLACE TABLE analytics\.claims_denorm AS/,
-                'CREATE OR REPLACE TABLE analytics.claims_denorm\nPARTITION BY DATE(claim_open_date)\nAS'
-              );
-            }
-            break;
-          case 'opt-3': // Add incremental merge logic
-            // This is a more complex transformation, for now, just add a comment
-            optimized = optimized + '\n-- TODO: Implement incremental MERGE logic for ' + optimization.title;
-            break;
-          case 'opt-4': // Add data quality checks
-            // This is a more complex transformation, for now, just add a comment
-            optimized = optimized + '\n-- TODO: Implement data quality checks for ' + optimization.title;
-            break;
-          case 'opt-5': // Improve code documentation
-            optimized = optimized + '\n-- Improved code documentation: Added doc-blocks for columns';
-            break;
-          case 'opt-6': // Generate cost estimation
-            optimized = `-- Estimated cost: [Calculated Cost Here]\n` + optimized;
-            break;
-          default:
-            // Fallback for other simulated optimizations
-            optimized = optimized + `\n-- Applied: ${optimization.title}`;
-            break;
+      selectedOptimizations.forEach(optId => {
+        const optimization = mockCodeOptimizations.find(opt => opt.id === optId);
+        console.log('Applying optimization:', optimization);
+        if (optimization) {
+          switch (optimization.id) {
+            case 'opt-1': // Add clustering keys for BigQuery
+              if (platform === 'bigquery') {
+                optimized = optimized.replace(
+                  /CREATE OR REPLACE TABLE analytics\.claims_denorm AS\nSELECT/,
+                  'CREATE OR REPLACE TABLE analytics.claims_denorm\nCLUSTER BY client_key\nAS\nSELECT'
+                );
+              }
+              break;
+            case 'opt-2': // Optimize date partitioning
+              if (platform === 'bigquery') {
+                optimized = optimized.replace(
+                  /CREATE OR REPLACE TABLE analytics\.claims_denorm AS/,
+                  'CREATE OR REPLACE TABLE analytics.claims_denorm\nPARTITION BY DATE(claim_open_date)\nAS'
+                );
+              }
+              break;
+            case 'opt-3': // Add incremental merge logic
+              // This is a more complex transformation, for now, just add a comment
+              optimized = optimized + '\n-- TODO: Implement incremental MERGE logic for ' + optimization.title;
+              break;
+            case 'opt-4': // Add data quality checks
+              // This is a more complex transformation, for now, just add a comment
+              optimized = optimized + '\n-- TODO: Implement data quality checks for ' + optimization.title;
+              break;
+            case 'opt-5': // Improve code documentation
+              optimized = optimized + '\n-- Improved code documentation: Added doc-blocks for columns';
+              break;
+            case 'opt-6': // Generate cost estimation
+              optimized = `-- Estimated cost: [Calculated Cost Here]\n` + optimized;
+              break;
+            default:
+              // Fallback for other simulated optimizations
+              optimized = optimized + `\n-- Applied: ${optimization.title}`;
+              break;
+          }
         }
-      }
-    });
+      });
 
-setOptimizedCode(optimized);
+      setOptimizedCode(optimized);
+    }
+    
     setIsOptimizing(false);
   };
 

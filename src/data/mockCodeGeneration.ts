@@ -1,157 +1,189 @@
 import { CodePlatform, GeneratedCode, CodeOptimization } from '@/types/migration';
 
 // BigQuery SQL Template
-const bigQuerySQL = `-- Generated BigQuery SQL for Data Migration
--- Source: PostgreSQL customers, orders tables
--- Target: BigQuery dim_customer, fact_order tables
+const bigQuerySQL = `-- Condensed BigQuery SQL using Denormalized Schema
+-- Steps collapsed for a cleaner, production‐style pipeline
 -- Generated: ${new Date().toISOString()}
 
--- 1) Customer Dimension
-CREATE OR REPLACE TABLE analytics.customers_denorm AS
+--------------------------------------------------------------------------------
+-- 1. BaseFlatten: unpack all nested arrays in one go
+--------------------------------------------------------------------------------
+WITH BaseFlatten AS (
+  SELECT
+    c.claim_identifier       AS claim_id,
+    c.policy_code            AS policy_ref,
+    c.client_key             AS customer_ref,
+    c.claim_open_date        AS clm_dt,
+    c.status_code            AS clm_status,
+    c.claim_value            AS clm_amt,
+    JSON_EXTRACT_SCALAR(c.claim_detail_json, '$.incident.date')     AS incident_date,
+    JSON_EXTRACT(c.claim_detail_json, '$.incident.details')        AS incident_details,
+    p.payment_key            AS pay_id,
+    p.paid_amount            AS amt_paid,
+    SAFE_CAST(JSON_EXTRACT_SCALAR(p.payment_meta, '$.pct') AS NUMERIC) AS allocation_pct,
+    a.adjustment_key         AS adj_id,
+    a.original_amount        AS adj_amt_src,
+    a.corrected_amount       AS adj_amt_corr,
+    e.sequence_number        AS event_seq,
+    com.commission_id        AS comm_id
+  FROM
+    \`project.dataset.claims_denorm\` AS c
+  LEFT JOIN UNNEST(c.payments)           AS p
+  LEFT JOIN UNNEST(c.adjustments)        AS a
+  LEFT JOIN UNNEST(c.events)             AS e
+  LEFT JOIN UNNEST(c.commission_records) AS com
+  WHERE
+    c.claim_open_date >= DATE('2025-01-01')
+),
+
+--------------------------------------------------------------------------------
+-- 2. FilterRecent: pick the most recent claim per policy
+--------------------------------------------------------------------------------
+FilterRecent AS (
+  SELECT
+    bf.*,
+    ROW_NUMBER() OVER (PARTITION BY bf.policy_ref ORDER BY bf.clm_dt DESC) AS rn
+  FROM BaseFlatten bf
+),
+
+--------------------------------------------------------------------------------
+-- 3. CustomerInfo, PolicyCoverages, RiskRatings inline as CTEs
+--------------------------------------------------------------------------------
+CustomerInfo AS (
+  SELECT
+    cu.customer_id  AS cust_id,
+    cu.name_first,
+    cu.name_last,
+    cu.region_code  AS region_cd,
+    cu.customer_segment AS segment,
+    cu.customer_risk_score AS risk_score
+  FROM \`project.dataset.customers_denorm\` cu
+  WHERE cu.active_flag = 'A'
+),
+
+PolicyCoverages AS (
+  SELECT
+    p.policy_key    AS policy_id,
+    cov.coverage_type,
+    cov.coverage_limit
+  FROM \`project.dataset.policies_denorm\` p,
+       UNNEST(p.coverages) AS cov
+  WHERE p.effective_on <= CURRENT_DATE()
+    AND p.expires_on   >= CURRENT_DATE()
+),
+
+RiskRatings AS (
+  SELECT
+    r.zip_code AS region_cd,
+    r.product_category AS pol_type,
+    r.risk_score_metric AS risk_score
+  FROM \`project.dataset.risk_ratings_denorm\` r
+  WHERE r.valid_from <= CURRENT_DATE()
+    AND r.valid_until >= CURRENT_DATE()
+),
+
+--------------------------------------------------------------------------------
+-- 4. Enriched: join flatten data with reference CTEs
+--------------------------------------------------------------------------------
+Enriched AS (
+  SELECT
+    fr.claim_id,
+    fr.policy_ref,
+    fr.customer_ref,
+    fr.clm_dt,
+    fr.incident_date,
+    fr.incident_details,
+    fr.clm_status,
+    fr.clm_amt,
+    fr.amt_paid * (fr.allocation_pct / 100) AS net_paid,
+    fr.adj_amt_corr - fr.adj_amt_src      AS adj_diff,
+    ci.name_first,
+    ci.name_last,
+    ci.region_cd,
+    ci.segment,
+    pc.coverage_type    AS coverage1_type,
+    pc.coverage_limit   AS coverage1_limit,
+    rr.risk_score       AS policy_risk_score
+  FROM
+    FilterRecent fr
+  LEFT JOIN CustomerInfo    ci ON fr.customer_ref = ci.cust_id
+  LEFT JOIN PolicyCoverages pc ON fr.policy_ref   = pc.policy_id
+  LEFT JOIN RiskRatings     rr ON ci.region_cd    = rr.region_cd
+  WHERE fr.rn = 1
+),
+
+--------------------------------------------------------------------------------
+-- 5. Aggregations: TimeSeries, RegionalAgg, StatusPivot
+--------------------------------------------------------------------------------
+TimeSeries AS (
+  SELECT
+    DATE(e.clm_dt)            AS report_date,
+    COUNT(*)                  AS daily_claims,
+    SUM(e.clm_amt)            AS daily_claim_amount,
+    SUM(e.net_paid)           AS daily_net_payments
+  FROM Enriched e
+  GROUP BY report_date
+),
+
+RegionalAgg AS (
+  SELECT
+    e.region_cd  AS region,
+    e.segment,
+    COUNT(e.claim_id)   AS claims_count,
+    SUM(e.clm_amt)      AS claims_amount,
+    AVG(e.policy_risk_score) AS avg_risk_score
+  FROM Enriched e
+  GROUP BY region, segment
+),
+
+StatusPivot AS (
+  SELECT
+    ra.region,
+    ra.segment,
+    SUM(CASE WHEN e.clm_status = 'O' THEN 1 ELSE 0 END) AS open_count,
+    SUM(CASE WHEN e.clm_status = 'C' THEN 1 ELSE 0 END) AS closed_count,
+    SUM(CASE WHEN e.clm_status = 'P' THEN 1 ELSE 0 END) AS pending_count
+  FROM RegionalAgg ra
+  JOIN Enriched e
+    ON ra.region = e.region_cd
+   AND ra.segment = e.segment
+  GROUP BY ra.region, ra.segment
+),
+
+--------------------------------------------------------------------------------
+-- 6. FinalOutput: assemble all pieces
+--------------------------------------------------------------------------------
+FinalOutput AS (
+  SELECT
+    e.*,
+    ts.daily_claims,
+    ts.daily_claim_amount,
+    ts.daily_net_payments,
+    ra.claims_count,
+    ra.claims_amount,
+    ra.avg_risk_score,
+    sp.open_count,
+    sp.closed_count,
+    sp.pending_count
+  FROM Enriched e
+  LEFT JOIN TimeSeries  ts ON DATE(e.clm_dt) = ts.report_date
+  LEFT JOIN RegionalAgg ra ON e.region_cd     = ra.region
+                         AND e.segment       = ra.segment
+  LEFT JOIN StatusPivot sp ON ra.region       = sp.region
+                         AND ra.segment      = sp.segment
+)
+
+--------------------------------------------------------------------------------
+-- 7. Final SELECT: top 100 rows
+--------------------------------------------------------------------------------
 SELECT
-  CAST(c.CUST_ID      AS INT64)       AS customer_id,           -- Name-Similarity
-  JSON_VALUE(c.NAME_JSON, '$.firstName') AS name_first,         -- Multi-Column Parse
-  JSON_VALUE(c.NAME_JSON, '$.lastName')  AS name_last,          -- Multi-Column Parse
-  c.REGION_CD                        AS region_code,            -- Name-Similarity
-  c.SEGMENT                          AS customer_segment,       -- Name-Similarity
-  CAST(c.DOB AS DATE)               AS date_of_birth,           -- Name-Similarity
-  c.EMAIL                            AS email_address,          -- Name-Similarity
-  c.PHONE                            AS phone_number,           -- Name-Similarity
-  JSON_VALUE(c.ADDR_JSON, '$.street')   AS address_street,      -- Fuzzy-Suggestion
-  JSON_VALUE(c.ADDR_JSON, '$.city')     AS address_city,        -- Fuzzy-Suggestion
-  JSON_VALUE(c.ADDR_JSON, '$.state')    AS address_state,       -- Fuzzy-Suggestion
-  JSON_VALUE(c.ADDR_JSON, '$.postcode') AS address_postcode,    -- Fuzzy-Suggestion
-  c.JOIN_DT                          AS joined_on,               -- Name-Similarity
-  c.STATUS                           AS status,                  -- Name-Similarity
-  c.PREF_CHANNEL                     AS preferred_contact,       -- Name-Similarity
-  CAST(c.RISK_SCORE AS NUMERIC)      AS risk_score               -- Name-Similarity
-FROM project.dataset.stage_db2_customers AS c;
-
-
--- 2) Policy Dimension
-CREATE OR REPLACE TABLE analytics.policies_denorm AS
-SELECT
-  CAST(p.POLICY_ID AS INT64)            AS policy_key,       -- Name-Similarity
-  p.EFF_DT                              AS effective_on,     -- Name-Similarity
-  p.EXP_DT                              AS expires_on,       -- Name-Similarity
-  p.POLICY_JSON                         AS policy_document,  -- Name-Similarity
-  p.PREMIUM_AMT                         AS total_premium,    -- Name-Similarity
-  p.POL_TYPE                            AS product_type,     -- Name-Similarity
-  JSON_VALUE(p.COVERAGES_JSON, '$.type')  AS coverage_type,  -- Fuzzy-Suggestion
-  JSON_VALUE(p.COVERAGES_JSON, '$.limit') AS coverage_limit, -- Fuzzy-Suggestion
-  p.STATUS                              AS policy_status,    -- Fuzzy-Suggestion
-  p.RIDER_CNT                           AS rider_count,      -- Name-Similarity
-  p.RENEWAL_DT                          AS next_renewal,     -- Name-Similarity
-  ARRAY_AGG(
-    STRUCT(
-      h.HIST_SEQ     AS revision_number,
-      h.CHANGE_DT    AS changed_on,
-      h.FIELD_NAME   AS field_changed,
-      h.OLD_VALUE    AS old_value_text,
-      h.NEW_VALUE    AS new_value_text
-    )
-    ORDER BY h.CHANGE_DT
-  ) AS history                                    -- Fuzzy-Nest-Array
-FROM project.dataset.stage_db2_policies         AS p
-LEFT JOIN project.dataset.stage_db2_policy_history AS h
-  ON h.POLICY_ID = p.POLICY_ID
-GROUP BY p.POLICY_ID, p.EFF_DT, p.EXP_DT, p.POLICY_JSON,
-         p.PREMIUM_AMT, p.POL_TYPE, p.COVERAGES_JSON,
-         p.STATUS, p.RIDER_CNT, p.RENEWAL_DT;
-
-
--- 3) Claim Fact (denormalized)
-CREATE OR REPLACE TABLE analytics.claims_denorm AS
-SELECT
-  CAST(c.CLM_ID   AS INT64)   AS claim_identifier,
-  CAST(c.POLICY_REF   AS INT64) AS policy_code,
-  CAST(c.CUSTOMER_REF AS INT64) AS client_key,
-  c.CLM_DT              AS claim_open_date,
-  c.CLM_STATUS          AS status_code,
-  c.CLM_AMT             AS claim_amount,
-  c.ADJ_AMT             AS total_adjustment_amount,
-  c.SETTLE_DT           AS settlement_date,
-  c.CLAIM_JSON          AS claim_details,
-  c.LOSS_TYPE           AS loss_category,
-  c.REPORTED_BY         AS reported_by,
-  c.INCIDENT_LOC        AS incident_location,
-  c.INCIDENT_DT         AS incident_date,
-  c.DAYS_OPEN           AS days_to_resolution,
-
-  -- payments[]
-  ARRAY(
-    SELECT AS STRUCT
-      CAST(pay.PAY_ID AS INT64)       AS payment_key,
-      pay.PAY_DT                      AS payment_date,
-      pay.AMT_PAID                    AS amount_paid,
-      pay.PAYMENT_TYPE                AS method_used,
-      pay.PAYMENT_STATUS              AS status
-    FROM project.dataset.stage_db2_payments AS pay
-    WHERE pay.CLM_ID = c.CLM_ID
-  ) AS payments,
-
-  -- adjustments[]
-  ARRAY(
-    SELECT AS STRUCT
-      CAST(adj.ADJ_ID AS INT64)              AS adjustment_key,
-      adj.ADJ_DT                             AS adjustment_date,
-      adj.ADJ_AMT_SRC                        AS original_amount,
-      adj.REASON_CD                          AS reason_code,
-      adj.COMMENTS                           AS comments_text,
-      adj.ADJ_JSON                           AS adjustment_meta
-    FROM project.dataset.stage_db2_adjustments AS adj
-    WHERE adj.CLM_ID = c.CLM_ID
-  ) AS adjustments,
-
-  -- events[]
-  ARRAY(
-    SELECT AS STRUCT
-      ev.EVENT_SEQ                   AS sequence_number,
-      ev.EVENT_DT                    AS occurred_on,
-      ev.EVENT_TYPE                  AS event_type,
-      ev.EVENT_DETAILS               AS event_details,
-      ev.DETAILS_JSON                AS event_metadata,
-      ev.USER_ID                     AS user_identifier
-    FROM project.dataset.stage_db2_claim_events AS ev
-    WHERE ev.CLM_ID = c.CLM_ID
-  ) AS events
-
-FROM project.dataset.stage_db2_claims AS c;
-
-
--- 4) Risk Ratings
-CREATE OR REPLACE TABLE analytics.risk_ratings_denorm AS
-SELECT
-  CAST(r.RATING_KEY AS INT64)    AS rating_key,
-  r.ZIP                          AS zip_code,
-  r.POL_TYPE                     AS policy_type,
-  r.RATING_JSON                  AS rating_details,
-  r.SCORE                        AS score,
-  r.EFFECTIVE_DT                 AS effective_date,
-  r.EXPIRATION_DT                AS expiration_date
-FROM project.dataset.stage_db2_risk_ratings AS r;
-
-
--- 5) Agent Dimension with commissions[]
-CREATE OR REPLACE TABLE analytics.agents_denorm AS
-SELECT
-  CAST(a.AGENT_ID AS INT64)     AS agent_key,
-  a.FIRST_NAME                  AS first_name,
-  a.LAST_NAME                   AS last_name,
-  a.REGION                      AS region,
-  a.STATUS                      AS status,
-  a.AGENT_JSON                  AS agent_meta,
-
-  ARRAY(
-    SELECT AS STRUCT
-      c.COMM_ID                AS commission_key,
-      c.COMM_DT                AS commission_date,
-      c.COMM_AMT               AS commission_amount
-    FROM project.dataset.stage_db2_commissions AS c
-    WHERE c.AGENT_ID = a.AGENT_ID
-  ) AS commissions
-
-FROM project.dataset.stage_db2_agents AS a;
+  *
+FROM
+  FinalOutput
+ORDER BY
+  report_date DESC,
+  claims_amount DESC
+LIMIT 100;
 `;
 
 // Databricks SQL Template
@@ -513,6 +545,168 @@ SELECT
 
 FROM {{ ref('stg_orders') }}`;
 
+// Optimized BigQuery SQL Template - This will be shown as the "After" code
+const optimizedBigQuerySQL = `--------------------------------------------------------------------------------
+-- Optimized BigQuery SQL for Target Reports
+-- Best practices applied: pushdown filters, avoid rescans, column pruning,
+-- QUALIFY usage, precompute reusable fields, explicit projections.
+--------------------------------------------------------------------------------
+
+WITH BaseFlatten AS (
+  SELECT
+    c.claim_identifier       AS claim_id,
+    c.policy_code            AS policy_ref,
+    c.client_key             AS customer_ref,
+    c.claim_open_date        AS clm_dt,
+    DATE(c.claim_open_date)  AS clm_date,  -- precomputed for reuse
+    c.status_code            AS clm_status,
+    c.claim_value            AS clm_amt,
+    JSON_EXTRACT_SCALAR(c.claim_detail_json, '$.incident.date')     AS incident_date,
+    JSON_EXTRACT(c.claim_detail_json, '$.incident.details')        AS incident_details,
+    p.payment_key            AS pay_id,
+    p.paid_amount            AS amt_paid,
+    SAFE_CAST(JSON_EXTRACT_SCALAR(p.payment_meta, '$.pct') AS NUMERIC) AS allocation_pct,
+    a.adjustment_key         AS adj_id,
+    a.original_amount        AS adj_amt_src,
+    a.corrected_amount       AS adj_amt_corr,
+    e.sequence_number        AS event_seq,
+    com.commission_id        AS comm_id
+  FROM
+    \`project.dataset.claims_denorm\` AS c
+  LEFT JOIN UNNEST(c.payments)           AS p
+  LEFT JOIN UNNEST(c.adjustments)        AS a
+  LEFT JOIN UNNEST(c.events)             AS e
+  LEFT JOIN UNNEST(c.commission_records) AS com
+  WHERE
+    c.claim_open_date >= DATE('2025-01-01')
+),
+
+-- Filter most recent claim per policy
+FilterRecent AS (
+  SELECT *
+  FROM BaseFlatten
+  QUALIFY ROW_NUMBER() OVER (PARTITION BY policy_ref ORDER BY clm_dt DESC) = 1
+),
+
+CustomerInfo AS (
+  SELECT
+    cu.customer_id  AS cust_id,
+    cu.name_first,
+    cu.name_last,
+    cu.region_code  AS region_cd,
+    cu.customer_segment AS segment,
+    cu.customer_risk_score AS risk_score
+  FROM \`project.dataset.customers_denorm\` cu
+  WHERE cu.active_flag = 'A'
+),
+
+PolicyCoverages AS (
+  SELECT
+    p.policy_key    AS policy_id,
+    cov.coverage_type,
+    cov.coverage_limit
+  FROM \`project.dataset.policies_denorm\` p,
+       UNNEST(p.coverages) AS cov
+  WHERE p.effective_on <= CURRENT_DATE()
+    AND p.expires_on   >= CURRENT_DATE()
+),
+
+RiskRatings AS (
+  SELECT
+    r.zip_code AS region_cd,
+    r.product_category AS pol_type,
+    r.risk_score_metric AS risk_score
+  FROM \`project.dataset.risk_ratings_denorm\` r
+  WHERE r.valid_from <= CURRENT_DATE()
+    AND r.valid_until >= CURRENT_DATE()
+),
+
+-- Enriched dataset with all joins applied
+Enriched AS (
+  SELECT
+    fr.claim_id,
+    fr.policy_ref,
+    fr.customer_ref,
+    fr.clm_dt,
+    fr.clm_date,
+    fr.incident_date,
+    fr.incident_details,
+    fr.clm_status,
+    fr.clm_amt,
+    fr.amt_paid * (fr.allocation_pct / 100) AS net_paid,
+    fr.adj_amt_corr - fr.adj_amt_src        AS adj_diff,
+    ci.name_first,
+    ci.name_last,
+    ci.region_cd,
+    ci.segment,
+    pc.coverage_type    AS coverage1_type,
+    pc.coverage_limit   AS coverage1_limit,
+    rr.risk_score       AS policy_risk_score
+  FROM
+    FilterRecent fr
+  LEFT JOIN CustomerInfo    ci ON fr.customer_ref = ci.cust_id
+  LEFT JOIN PolicyCoverages pc ON fr.policy_ref   = pc.policy_id
+  LEFT JOIN RiskRatings     rr ON ci.region_cd    = rr.region_cd
+),
+
+-- Combined aggregation step to avoid rescans
+Aggregations AS (
+  SELECT
+    e.region_cd,
+    e.segment,
+    e.clm_date,
+    COUNT(e.claim_id)                     AS claims_count,
+    SUM(e.clm_amt)                         AS claims_amount,
+    AVG(e.policy_risk_score)               AS avg_risk_score,
+    SUM(CASE WHEN e.clm_status = 'O' THEN 1 ELSE 0 END) AS open_count,
+    SUM(CASE WHEN e.clm_status = 'C' THEN 1 ELSE 0 END) AS closed_count,
+    SUM(CASE WHEN e.clm_status = 'P' THEN 1 ELSE 0 END) AS pending_count,
+    COUNT(*)                               AS daily_claims,
+    SUM(e.clm_amt)                         AS daily_claim_amount,
+    SUM(e.net_paid)                        AS daily_net_payments
+  FROM Enriched e
+  GROUP BY e.region_cd, e.segment, e.clm_date
+)
+
+-- Final Output
+SELECT
+  e.claim_id,
+  e.policy_ref,
+  e.customer_ref,
+  e.clm_dt,
+  e.clm_date,
+  e.incident_date,
+  e.incident_details,
+  e.clm_status,
+  e.clm_amt,
+  e.net_paid,
+  e.adj_diff,
+  e.name_first,
+  e.name_last,
+  e.region_cd,
+  e.segment,
+  e.coverage1_type,
+  e.coverage1_limit,
+  e.policy_risk_score,
+  a.daily_claims,
+  a.daily_claim_amount,
+  a.daily_net_payments,
+  a.claims_count,
+  a.claims_amount,
+  a.avg_risk_score,
+  a.open_count,
+  a.closed_count,
+  a.pending_count
+FROM Enriched e
+LEFT JOIN Aggregations a
+  ON e.region_cd = a.region_cd
+ AND e.segment   = a.segment
+ AND e.clm_date  = a.clm_date
+ORDER BY
+  e.clm_date DESC,
+  a.claims_amount DESC
+LIMIT 100;`;
+
 export const mockGeneratedCodes: Record<CodePlatform, GeneratedCode> = {
   bigquery: {
     platform: 'bigquery',
@@ -644,3 +838,6 @@ export function getPlatformInfo(platform: CodePlatform) {
   
   return platformData[platform];
 }
+
+// Export the optimized SQL for use in CodeOptimizer
+export { optimizedBigQuerySQL };
