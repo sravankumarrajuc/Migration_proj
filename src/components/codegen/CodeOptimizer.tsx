@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { DiffEditor } from '@monaco-editor/react';
 import { Button } from '@/components/ui/button';
@@ -46,6 +46,14 @@ export function CodeOptimizer({
   const [selectedOptimizations, setSelectedOptimizations] = useState<string[]>([]);
   const [optimizedCode, setOptimizedCode] = useState(code); // This state will hold the *currently* optimized code within the modal
   const [isOptimizing, setIsOptimizing] = useState(false);
+  const [activeTab, setActiveTab] = useState('optimizations'); // New state for tab management
+
+  // Reset tab to optimizations when modal opens
+  useEffect(() => {
+    if (open) {
+      setActiveTab('optimizations');
+    }
+  }, [open]);
 
   const toggleOptimization = (optimizationId: string) => {
     setSelectedOptimizations(prev => 
@@ -123,6 +131,8 @@ export function CodeOptimizer({
     }
     
     setIsOptimizing(false);
+    // Switch to preview tab after optimization completes
+    setActiveTab('preview');
   };
 
   const handleApplyChanges = () => {
@@ -148,7 +158,7 @@ export function CodeOptimizer({
           </DialogDescription>
         </DialogHeader>
 
-        <Tabs defaultValue="optimizations" className="h-full">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full">
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="optimizations">Optimizations</TabsTrigger>
             <TabsTrigger value="preview">Preview</TabsTrigger>
