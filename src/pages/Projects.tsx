@@ -167,14 +167,14 @@ export default function Projects() {
             <DialogTrigger asChild>
               <Button className="bg-gradient-hero hover:opacity-90 shadow-enterprise">
                 <Plus className="mr-2 h-4 w-4" />
-                New Project
+                New Schema Mapping
               </Button>
             </DialogTrigger>
             <DialogContent className="max-w-2xl">
               <DialogHeader>
-                <DialogTitle>Create Migration Project</DialogTitle>
+                <DialogTitle>Create New Schema Mapping</DialogTitle>
                 <DialogDescription>
-                  Set up a new data migration project with source and target configurations.
+                  Set up a new setup new Schema mapping with source and target configurations.
                 </DialogDescription>
               </DialogHeader>
               
@@ -215,20 +215,20 @@ export default function Projects() {
                 <TabsContent value="custom" className="space-y-4">
                   <div className="grid gap-4">
                     <div className="grid gap-2">
-                      <Label htmlFor="project-name">Project Name *</Label>
+                      <Label htmlFor="project-name">Schema Mapping Name *</Label>
                       <Input
                         id="project-name"
-                        placeholder="Enter project name"
+                        placeholder="Enter Schema mapping"
                         value={newProject.name}
                         onChange={(e) => setNewProject({ ...newProject, name: e.target.value })}
                       />
                     </div>
                     
                     <div className="grid gap-2">
-                      <Label htmlFor="project-description">Description</Label>
+                      <Label htmlFor="project-description">Describe your Schema mapping</Label>
                       <Textarea
                         id="project-description"
-                        placeholder="Describe your migration project"
+                        placeholder="Describe your Schema mapping"
                         value={newProject.description}
                         onChange={(e) => setNewProject({ ...newProject, description: e.target.value })}
                       />
@@ -282,7 +282,7 @@ export default function Projects() {
                   Cancel
                 </Button>
                 <Button onClick={handleCreateProject} className="bg-gradient-hero hover:opacity-90">
-                  Create Project
+                  Create Schema Mapping
                 </Button>
               </div>
             </DialogContent>
