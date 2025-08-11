@@ -103,6 +103,9 @@ interface MigrationState {
   
   // Project completion
   completeProject: () => void;
+  
+  // Initialize mapping data for validation phase
+  initializeMappingDataForValidation: () => void;
 }
 
 export const useMigrationStore = create<MigrationState>()(
@@ -850,6 +853,72 @@ export const useMigrationStore = create<MigrationState>()(
           optimizedCodeForComparison: '',
         },
       })),
+
+      // Initialize mapping data for validation phase
+      initializeMappingDataForValidation: () => {
+        const { mappingState } = get();
+        
+        // If no mapping data exists, initialize with mock data
+        if (mappingState.allMappings.length === 0) {
+          const mockTableMappings = [
+            {
+              sourceTableId: 'src-db2-customers',
+              targetTableId: 'tgt-bq-customers',
+              fieldMappings: customerMappings,
+              completionPercentage: 100,
+              requiredFieldsCovered: customerMappings.length,
+              totalRequiredFields: customerMappings.length,
+            },
+            {
+              sourceTableId: 'src-db2-claims',
+              targetTableId: 'tgt-bq-claims',
+              fieldMappings: claimsMappings,
+              completionPercentage: 100,
+              requiredFieldsCovered: claimsMappings.length,
+              totalRequiredFields: claimsMappings.length,
+            },
+            {
+              sourceTableId: 'src-db2-policies',
+              targetTableId: 'tgt-bq-policies',
+              fieldMappings: policiesMappings,
+              completionPercentage: 100,
+              requiredFieldsCovered: policiesMappings.length,
+              totalRequiredFields: policiesMappings.length,
+            },
+            {
+              sourceTableId: 'src-db2-agents',
+              targetTableId: 'tgt-bq-agents',
+              fieldMappings: agentsMappings,
+              completionPercentage: 100,
+              requiredFieldsCovered: agentsMappings.length,
+              totalRequiredFields: agentsMappings.length,
+            },
+            {
+              sourceTableId: 'src-db2-risk-ratings',
+              targetTableId: 'tgt-bq-risk-ratings',
+              fieldMappings: riskRatingsMappings,
+              completionPercentage: 100,
+              requiredFieldsCovered: riskRatingsMappings.length,
+              totalRequiredFields: riskRatingsMappings.length,
+            },
+          ];
+
+          set((state) => ({
+            mappingState: {
+              ...state.mappingState,
+              allMappings: mockTableMappings,
+              suggestions: [
+                ...customerMappings,
+                ...claimsMappings,
+                ...policiesMappings,
+                ...agentsMappings,
+                ...riskRatingsMappings,
+              ],
+              completedAt: new Date().toISOString(),
+            },
+          }));
+        }
+      },
 
       // Project completion
       completeProject: () => {
