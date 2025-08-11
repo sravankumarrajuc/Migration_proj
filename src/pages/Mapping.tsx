@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useMigrationStore } from '@/store/migrationStore';
 import { Button } from '@/components/ui/button';
@@ -32,12 +32,36 @@ export function Mapping() {
     acceptMapping,
     completeMapping,
     canProceedToNextPhase,
+    clearTableFilter,
   } = useMigrationStore();
 
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [showReview, setShowReview] = useState(false);
   const [showAllFieldMappings, setShowAllFieldMappings] = useState(false); // New state for AI Suggestions panel visibility
   const [displayAllCanvasMappings, setDisplayAllCanvasMappings] = useState(false); // New state for Mapping Canvas visibility
+
+  // Compute mapping canvas props
+  const mappingCanvasProps = useMemo(() => {
+    const hasTableOrColumnSelection = mappingState.selectedTableFilter || 
+      (mappingState.selectedSourceColumns.length > 0 || mappingState.selectedTargetColumns.length > 0);
+    
+    // Show all mappings if:
+    // 1. Table or column selection is active, OR
+    // 2. AI suggestions have been generated (displayAllCanvasMappings is true)
+    const shouldShowAllMappings = hasTableOrColumnSelection || displayAllCanvasMappings;
+    
+    const tableMappings = shouldShowAllMappings
+      ? mappingState.allMappings // Show all mappings when table/column is selected OR AI suggestions generated
+      : mappingState.allMappings.map(tableMapping => ({
+          ...tableMapping,
+          fieldMappings: tableMapping.fieldMappings.filter(fm => fm.confidence >= 90)
+        })); // Show only 90%+ confidence initially
+    
+    return {
+      tableMappings,
+      showAllText: Boolean(shouldShowAllMappings)
+    };
+  }, [mappingState.selectedTableFilter, mappingState.selectedSourceColumns, mappingState.selectedTargetColumns, mappingState.allMappings, displayAllCanvasMappings]);
 
   useEffect(() => {
     if (currentPhase !== 'mapping') {
@@ -156,6 +180,15 @@ export function Mapping() {
                 ) : null}
                 Generate AI Suggestions
               </Button>
+              {mappingState.selectedTableFilter && (
+                <Button
+                  onClick={clearTableFilter}
+                  variant="outline"
+                  className="gap-2"
+                >
+                  Clear Filter
+                </Button>
+              )}
               <Button
                 onClick={() => setShowReview(!showReview)}
                 variant="outline"
@@ -217,14 +250,8 @@ export function Mapping() {
                 </div>
               ) : (
                 <MappingCanvas
-                  tableMappings={displayAllCanvasMappings
-                    ? mappingState.allMappings
-                    : mappingState.allMappings.map(tableMapping => ({
-                        ...tableMapping,
-                        fieldMappings: tableMapping.fieldMappings.filter(fm => fm.confidence >= 90)
-                      }))
-                  } // Conditionally pass mappings
-                  showAllText={displayAllCanvasMappings} // Pass the new state for text visibility
+                  tableMappings={mappingCanvasProps.tableMappings}
+                  showAllText={mappingCanvasProps.showAllText}
                 />
               )}
             </ResizablePanel>

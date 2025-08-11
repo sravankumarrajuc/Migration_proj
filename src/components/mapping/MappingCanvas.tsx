@@ -6,11 +6,9 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { ArrowRight, Zap, Link, Calculator, Code, Shuffle, Trash2, Sparkles } from 'lucide-react';
-import { getTransformationIcon, getConfidenceBadgeColor } from '@/data/mockMappingData';
-import { TransformationType } from '@/types/migration';
+import { getConfidenceBadgeColor } from '@/data/mockMappingData';
+import { TransformationType, TableMapping, FieldMapping } from '@/types/migration';
 import { cn } from '@/lib/utils';
-
-import { TableMapping } from '@/types/migration'; // Add this import
 
 interface MappingCanvasProps {
   tableMappings: TableMapping[];
@@ -18,15 +16,70 @@ interface MappingCanvasProps {
 }
 
 export function MappingCanvas({ tableMappings, showAllText }: MappingCanvasProps) {
-  const { discoveryState, updateFieldMapping, removeFieldMapping } = useMigrationStore();
+  const { discoveryState, updateFieldMapping, removeFieldMapping, mappingState } = useMigrationStore();
 
-  const currentMappings = useMemo(() => {
-    return tableMappings.flatMap(tableMapping =>
+  const currentMappings = useMemo((): FieldMapping[] => {
+    let filteredMappings = tableMappings.flatMap(tableMapping =>
       tableMapping.fieldMappings.filter(fm =>
         fm.status === 'approved' || fm.status === 'suggested' || fm.status === 'rejected'
       )
     );
-  }, [tableMappings]);
+
+    // Apply table filter if one is selected
+    if (mappingState.selectedTableFilter && mappingState.selectedTableFilterType) {
+      filteredMappings = filteredMappings.filter(fm => {
+        if (mappingState.selectedTableFilterType === 'source') {
+          return fm.sourceTableId === mappingState.selectedTableFilter;
+        } else if (mappingState.selectedTableFilterType === 'target') {
+          return fm.targetTableId === mappingState.selectedTableFilter;
+        }
+        return true;
+      });
+    }
+
+    // Apply column selection filter - only show mappings for selected columns
+    if (mappingState.selectedSourceColumns.length > 0 || mappingState.selectedTargetColumns.length > 0) {
+      console.log('Column filtering active:', {
+        selectedSourceColumns: mappingState.selectedSourceColumns,
+        selectedTargetColumns: mappingState.selectedTargetColumns,
+        totalMappings: filteredMappings.length,
+        allMappings: filteredMappings.map(fm => ({
+          id: fm.id,
+          sourceColumnId: fm.sourceColumnId,
+          targetColumnId: fm.targetColumnId
+        }))
+      });
+      
+      filteredMappings = filteredMappings.filter(fm => {
+        // Show mapping if the source column is in the selected source columns
+        // OR if the target column is in the selected target columns
+        const sourceColumnSelected = mappingState.selectedSourceColumns.length > 0 && 
+          mappingState.selectedSourceColumns.includes(fm.sourceColumnId);
+        const targetColumnSelected = mappingState.selectedTargetColumns.length > 0 && 
+          mappingState.selectedTargetColumns.includes(fm.targetColumnId);
+        
+        // Show the mapping if either source or target column is selected
+        const shouldShow = sourceColumnSelected || targetColumnSelected;
+        
+        console.log('Checking mapping:', {
+          mappingId: fm.id,
+          sourceColumnId: fm.sourceColumnId,
+          targetColumnId: fm.targetColumnId,
+          sourceColumnSelected,
+          targetColumnSelected,
+          shouldShow,
+          selectedSourceColumns: mappingState.selectedSourceColumns,
+          selectedTargetColumns: mappingState.selectedTargetColumns
+        });
+        
+        return shouldShow;
+      });
+      
+      console.log('Filtered mappings count:', filteredMappings.length);
+    }
+
+    return filteredMappings;
+  }, [tableMappings, mappingState.selectedTableFilter, mappingState.selectedTableFilterType, mappingState.selectedSourceColumns, mappingState.selectedTargetColumns]);
 
   const getSourceColumn = (sourceTableId: string, sourceColumnId: string) => {
     if (!discoveryState.lineageGraph) return null;
@@ -66,10 +119,20 @@ export function MappingCanvas({ tableMappings, showAllText }: MappingCanvasProps
         <CardTitle className="flex items-center gap-2">
           <ArrowRight className="h-5 w-5" />
           Field Mappings
+          {mappingState.selectedTableFilter && (
+            <Badge variant="outline" className="ml-2">
+              Filtered by {mappingState.selectedTableFilterType} table
+            </Badge>
+          )}
         </CardTitle>
-        {showAllText && (
+        {showAllText && !mappingState.selectedTableFilter && (
           <div className="text-sm text-muted-foreground">
             Displaying all field mappings.
+          </div>
+        )}
+        {mappingState.selectedTableFilter && (
+          <div className="text-sm text-muted-foreground">
+            Showing mappings for {mappingState.selectedTableFilterType} table: {mappingState.selectedTableFilter}
           </div>
         )}
       </CardHeader>

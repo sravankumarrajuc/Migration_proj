@@ -199,6 +199,10 @@ export interface MappingState {
   suggestions: FieldMapping[];
   error: string | null;
   completedAt: string | null;
+  selectedTableFilter: string | null;
+  selectedTableFilterType: 'source' | 'target' | null;
+  selectedSourceColumns: string[];
+  selectedTargetColumns: string[];
 }
 
 // Code Generation Types

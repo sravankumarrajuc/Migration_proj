@@ -83,6 +83,15 @@ interface MigrationState {
   completeMapping: () => void;
   resetMapping: () => void;
   
+  // Table filtering actions
+  setSelectedTableFilter: (tableId: string, tableType: 'source' | 'target') => void;
+  clearTableFilter: () => void;
+  
+  // Column selection actions
+  toggleSourceColumnSelection: (columnId: string) => void;
+  toggleTargetColumnSelection: (columnId: string) => void;
+  clearColumnSelections: () => void;
+  
   // Code Generation actions
   startCodeGeneration: (step: string) => void;
   setSelectedPlatform: (platform: CodePlatform) => void;
@@ -158,6 +167,10 @@ export const useMigrationStore = create<MigrationState>()(
       suggestions: [],
       error: null,
       completedAt: null,
+      selectedTableFilter: null,
+      selectedTableFilterType: null,
+      selectedSourceColumns: [],
+      selectedTargetColumns: [],
     },
 
     codeGenerationState: {
@@ -629,6 +642,74 @@ export const useMigrationStore = create<MigrationState>()(
             suggestions: [],
             error: null,
             completedAt: null,
+            selectedTableFilter: null,
+            selectedTableFilterType: null,
+            selectedSourceColumns: [],
+            selectedTargetColumns: [],
+          },
+        }));
+      },
+
+      // Table filtering actions
+      setSelectedTableFilter: (tableId, tableType) => {
+        set((state) => ({
+          mappingState: {
+            ...state.mappingState,
+            selectedTableFilter: tableId,
+            selectedTableFilterType: tableType,
+          },
+        }));
+      },
+
+      clearTableFilter: () => {
+        set((state) => ({
+          mappingState: {
+            ...state.mappingState,
+            selectedTableFilter: null,
+            selectedTableFilterType: null,
+          },
+        }));
+      },
+
+      // Column selection actions
+      toggleSourceColumnSelection: (columnId) => {
+        set((state) => {
+          const currentSelected = state.mappingState.selectedSourceColumns;
+          const isSelected = currentSelected.includes(columnId);
+          
+          return {
+            mappingState: {
+              ...state.mappingState,
+              selectedSourceColumns: isSelected
+                ? currentSelected.filter(id => id !== columnId)
+                : [...currentSelected, columnId],
+            },
+          };
+        });
+      },
+
+      toggleTargetColumnSelection: (columnId) => {
+        set((state) => {
+          const currentSelected = state.mappingState.selectedTargetColumns;
+          const isSelected = currentSelected.includes(columnId);
+          
+          return {
+            mappingState: {
+              ...state.mappingState,
+              selectedTargetColumns: isSelected
+                ? currentSelected.filter(id => id !== columnId)
+                : [...currentSelected, columnId],
+            },
+          };
+        });
+      },
+
+      clearColumnSelections: () => {
+        set((state) => ({
+          mappingState: {
+            ...state.mappingState,
+            selectedSourceColumns: [],
+            selectedTargetColumns: [],
           },
         }));
       },

@@ -5,11 +5,12 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Search, Database, Table, CheckCircle, Circle, Star, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export function TargetSchemaPanel() {
-  const { discoveryState, mappingState } = useMigrationStore();
+  const { discoveryState, mappingState, toggleTargetColumnSelection } = useMigrationStore();
   const [searchTerm, setSearchTerm] = useState('');
   const [expandedTables, setExpandedTables] = useState<Set<string>>(new Set());
 
@@ -35,6 +36,8 @@ export function TargetSchemaPanel() {
     table.columns.some(col => col.name.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
+  const { setSelectedTableFilter, clearTableFilter } = useMigrationStore();
+
   const toggleTableExpansion = (tableId: string) => {
     const newExpanded = new Set(expandedTables);
     if (newExpanded.has(tableId)) {
@@ -43,6 +46,23 @@ export function TargetSchemaPanel() {
       newExpanded.add(tableId);
     }
     setExpandedTables(newExpanded);
+  };
+
+  const handleTableClick = (tableId: string, event: React.MouseEvent) => {
+    // Check if the click is on the expand/collapse area or the table selection area
+    const target = event.target as HTMLElement;
+    const isExpandClick = target.closest('[data-expand-trigger]');
+    
+    if (!isExpandClick) {
+      // This is a table selection click for filtering
+      if (mappingState.selectedTableFilter === tableId && mappingState.selectedTableFilterType === 'target') {
+        // If the same table is clicked again, clear the filter
+        clearTableFilter();
+      } else {
+        // Set the new table filter
+        setSelectedTableFilter(tableId, 'target');
+      }
+    }
   };
 
   const getColumnMappingStatus = (tableId: string, columnId: string) => {
@@ -104,9 +124,11 @@ export function TargetSchemaPanel() {
                       "flex items-center justify-between p-3 rounded-lg border cursor-pointer transition-colors",
                       isSelected 
                         ? "border-primary bg-primary/5" 
+                        : mappingState.selectedTableFilter === table.id && mappingState.selectedTableFilterType === 'target'
+                        ? "border-blue-300 bg-blue-50 ring-2 ring-blue-200"
                         : "border-border hover:bg-muted/50"
                     )}
-                    onClick={() => toggleTableExpansion(table.id)}
+                    onClick={(e) => handleTableClick(table.id, e)}
                   >
                     <div className="flex items-center gap-3">
                       <Table className="h-4 w-4 text-muted-foreground" />
@@ -131,6 +153,16 @@ export function TargetSchemaPanel() {
                       <Badge variant="outline" className="text-xs">
                         {table.dialect}
                       </Badge>
+                      <div 
+                        data-expand-trigger
+                        className="p-1 hover:bg-muted rounded"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleTableExpansion(table.id);
+                        }}
+                      >
+                        {isExpanded ? '−' : '+'}
+                      </div>
                     </div>
                   </div>
 
@@ -139,6 +171,7 @@ export function TargetSchemaPanel() {
                       {table.columns.map((column) => {
                         const mappingStatus = getColumnMappingStatus(table.id, column.id);
                         const isRequired = isRequiredField(column);
+                        const isSelected = mappingState.selectedTargetColumns.includes(column.id);
                         
                         return (
                           <div
@@ -151,10 +184,17 @@ export function TargetSchemaPanel() {
                                 ? "border-yellow-200 bg-yellow-50"
                                 : isRequired 
                                 ? "border-red-200 bg-red-50"
+                                : isSelected
+                                ? "border-blue-200 bg-blue-50"
                                 : "border-border"
                             )}
                           >
                             <div className="flex items-center gap-2">
+                              <Checkbox
+                                checked={isSelected}
+                                onCheckedChange={() => toggleTargetColumnSelection(column.id)}
+                                className="h-4 w-4"
+                              />
                               {mappingStatus === 'mapped' ? (
                                 <CheckCircle className="h-4 w-4 text-green-600" />
                               ) : isRequired ? (
