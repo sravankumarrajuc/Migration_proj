@@ -29,19 +29,23 @@ function TableFlowNode({ data }: { data: { table: TableNode; label: string; type
   
   return (
     <div className={`bg-card border rounded-lg shadow-lg min-w-[250px] ${
-      type === 'source' ? 'border-blue-200' : 'border-green-200'
+      type === 'source' ? 'border-orange-500' : 'border-blue-500'
     }`}>
       {/* Source Handle */}
-      <Handle type="source" position={Position.Right} className="w-3 h-3 bg-blue-500" />
+      <Handle type="source" position={Position.Right} className={`w-3 h-3 ${
+        type === 'source' ? 'bg-orange-500' : 'bg-blue-500'
+      }`} />
 
       {/* Target Handle */}
-      <Handle type="target" position={Position.Left} className="w-3 h-3 bg-green-500" />
+      <Handle type="target" position={Position.Left} className={`w-3 h-3 ${
+        type === 'source' ? 'bg-orange-500' : 'bg-blue-500'
+      }`} />
 
       {/* Header */}
       <div className={`px-4 py-3 border-b rounded-t-lg ${
         type === 'source'
-          ? 'bg-blue-50 border-blue-200'
-          : 'bg-green-50 border-green-200'
+          ? 'bg-orange-50 border-orange-500'
+          : 'bg-blue-50 border-blue-500'
       }`}>
         <div className="flex items-center gap-2">
           <Database className="h-4 w-4" />

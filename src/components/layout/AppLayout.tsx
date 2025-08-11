@@ -1,4 +1,4 @@
-import { Outlet, useLocation, Link } from 'react-router-dom';
+import { Outlet, useLocation, Link, useNavigate } from 'react-router-dom';
 import { Header } from './Header';
 import { StepIndicator } from './StepIndicator';
 import { useMigrationStore } from '@/store/migrationStore';
@@ -37,11 +37,20 @@ import { Button } from '@/components/ui/button';
 
 export function AppLayout() {
   const location = useLocation();
+  const navigate = useNavigate();
   const { currentProject, currentPhase, userProfile, clearUserProfile, setUserProfile } = useMigrationStore();
   
   const handleSignOut = () => {
     googleLogout();
     clearUserProfile();
+    
+    // Clear all localStorage data for security
+    if (typeof window !== 'undefined') {
+      localStorage.clear();
+    }
+    
+    // Navigate to main page after logout
+    navigate('/');
   };
 
   const handleLoginSuccess = async (response: any) => {
