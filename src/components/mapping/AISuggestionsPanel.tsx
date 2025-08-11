@@ -28,9 +28,15 @@ export function AISuggestionsPanel({ onClose, showAllSuggestions }: AISuggestion
     setDisplayAll(showAllSuggestions);
   }, [showAllSuggestions]);
 
-  const highConfidenceSuggestions = mappingState.suggestions.filter(s => s.confidence >= 90);
-  const mediumConfidenceSuggestions = mappingState.suggestions.filter(s => s.confidence >= 80 && s.confidence < 90);
-  const lowConfidenceSuggestions = mappingState.suggestions.filter(s => s.confidence < 80);
+  // Get all field mappings from allMappings array to ensure synchronization
+  const allFieldMappings = mappingState.allMappings.flatMap(tableMapping => tableMapping.fieldMappings);
+  
+  // Use allFieldMappings as the source of truth, fallback to suggestions if empty
+  const currentSuggestions = allFieldMappings.length > 0 ? allFieldMappings : mappingState.suggestions;
+
+  const highConfidenceSuggestions = currentSuggestions.filter(s => s.confidence >= 90);
+  const mediumConfidenceSuggestions = currentSuggestions.filter(s => s.confidence >= 80 && s.confidence < 90);
+  const lowConfidenceSuggestions = currentSuggestions.filter(s => s.confidence < 80);
 
 
   const getSourceColumn = (sourceTableId: string, sourceColumnId: string) => {
@@ -218,7 +224,7 @@ export function AISuggestionsPanel({ onClose, showAllSuggestions }: AISuggestion
       <CardContent className="flex-1 overflow-hidden p-0">
         <ScrollArea className="h-full">
           <div className="p-4 space-y-6">
-            {mappingState.suggestions.length === 0 ? (
+            {currentSuggestions.length === 0 ? (
               <div className="text-center py-8">
                 <Sparkles className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                 <h3 className="text-lg font-semibold mb-2">No Suggestions Available</h3>

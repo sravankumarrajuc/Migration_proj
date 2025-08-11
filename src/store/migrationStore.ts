@@ -528,22 +528,34 @@ export const useMigrationStore = create<MigrationState>()(
 
       removeFieldMapping: (mappingId) => {
         set((state) => {
-          if (!state.mappingState.currentTableMapping) return state;
+          console.log('Removing field mapping:', mappingId);
           
-          const updatedMapping = {
+          // Remove from suggestions array
+          const updatedSuggestions = state.mappingState.suggestions.filter(s => s.id !== mappingId);
+          
+          // Remove from all mappings array - this is crucial for UI reactivity
+          const updatedAllMappings = state.mappingState.allMappings.map(tableMapping => ({
+            ...tableMapping,
+            fieldMappings: tableMapping.fieldMappings.filter(fm => fm.id !== mappingId),
+          }));
+          
+          // Update current table mapping if it exists
+          const updatedCurrentTableMapping = state.mappingState.currentTableMapping ? {
             ...state.mappingState.currentTableMapping,
             fieldMappings: state.mappingState.currentTableMapping.fieldMappings.filter(fm => fm.id !== mappingId),
-          };
+          } : null;
+          
+          console.log('Updated mappings after removal:', {
+            suggestionsCount: updatedSuggestions.length,
+            allMappingsCount: updatedAllMappings.reduce((sum, tm) => sum + tm.fieldMappings.length, 0)
+          });
           
           return {
             mappingState: {
               ...state.mappingState,
-              currentTableMapping: updatedMapping,
-              allMappings: state.mappingState.allMappings.map(m =>
-                m.sourceTableId === updatedMapping.sourceTableId && m.targetTableId === updatedMapping.targetTableId
-                  ? updatedMapping
-                  : m
-              ),
+              currentTableMapping: updatedCurrentTableMapping,
+              suggestions: updatedSuggestions,
+              allMappings: updatedAllMappings,
             },
           };
         });

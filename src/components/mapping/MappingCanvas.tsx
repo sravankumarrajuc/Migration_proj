@@ -223,7 +223,12 @@ export function MappingCanvas({ tableMappings, showAllText }: MappingCanvasProps
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => removeFieldMapping(mapping.id)}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            console.log('Delete button clicked for mapping:', mapping.id);
+                            removeFieldMapping(mapping.id);
+                          }}
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
