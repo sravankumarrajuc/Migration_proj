@@ -25,6 +25,7 @@ export function ExportOptions({
   projectName
 }: ExportOptionsProps) {
   const { toast } = useToast();
+  const [activeTab, setActiveTab] = useState('download');
   const [exportSettings, setExportSettings] = useState({
     includeDocumentation: true,
     includeReadme: true,
@@ -45,20 +46,19 @@ export function ExportOptions({
       // Simulate file preparation
       await new Promise(resolve => setTimeout(resolve, 2000));
       
-      // Create and download files
-      Object.entries(generatedCodes).forEach(([platform, code]) => {
-        if (code) {
-          const blob = new Blob([code.content], { type: 'text/plain' });
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = code.fileName;
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
-          URL.revokeObjectURL(url);
-        }
-      });
+      // Create and download only BigQuery file
+      const bigqueryCode = generatedCodes.bigquery;
+      if (bigqueryCode) {
+        const blob = new Blob([bigqueryCode.content], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = bigqueryCode.fileName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }
 
       if (exportSettings.includeReadme) {
         const readmeContent = generateReadme();
@@ -74,8 +74,8 @@ export function ExportOptions({
       }
 
       toast({
-        title: "Files downloaded",
-        description: "All generated code files have been downloaded successfully",
+        title: "File downloaded",
+        description: "BigQuery migration file has been downloaded successfully",
       });
       
       onOpenChange(false);
@@ -115,20 +115,15 @@ export function ExportOptions({
   };
 
   const generateReadme = () => {
-    const availablePlatforms = Object.keys(generatedCodes).filter(platform => 
-      generatedCodes[platform as CodePlatform]
-    );
+    const bigqueryCode = generatedCodes.bigquery;
 
     return `# ${projectName} - Data Migration
 
 ## Overview
-This repository contains generated ETL code for migrating data from legacy systems to modern cloud platforms.
+This repository contains generated ETL code for migrating data from legacy systems to BigQuery.
 
-## Generated Platforms
-${availablePlatforms.map(platform => {
-  const code = generatedCodes[platform as CodePlatform];
-  return `- **${platform.toUpperCase()}**: ${code?.fileName} (${Math.round((code?.size || 0) / 1024)}KB)`;
-}).join('\n')}
+## Generated Platform
+- **BIGQUERY**: ${bigqueryCode?.fileName || 'bigquery_migration.sql'} (${Math.round((bigqueryCode?.size || 0) / 1024)}KB)
 
 ## Quick Start
 
@@ -137,33 +132,12 @@ ${availablePlatforms.map(platform => {
 2. Run the migration scripts in BigQuery console
 3. Validate data integrity using the provided queries
 
-### Databricks
-1. Import SQL files into your Databricks workspace
-2. Configure Delta Lake storage paths
-3. Execute notebooks in the correct dependency order
-
-### Python/Beam
-1. Install Apache Beam: \`pip install apache-beam[gcp]\`
-2. Configure authentication for your cloud provider
-3. Run the pipeline: \`python beam_migration_pipeline.py\`
-
-### dbt
-1. Install dbt: \`pip install dbt-bigquery\`
-2. Configure profiles.yml with your connection details
-3. Run migrations: \`dbt run\`
-
 ## File Structure
 \`\`\`
 ${exportSettings.organizeByPlatform ? `
 ├── bigquery/
 │   └── bigquery_migration.sql
-├── databricks/
-│   └── databricks_migration.sql
-├── python-beam/
-│   └── beam_migration_pipeline.py
-├── dbt/
-│   └── dbt_migration_models.sql
-` : availablePlatforms.map(platform => `├── ${generatedCodes[platform as CodePlatform]?.fileName}`).join('\n')}
+` : `├── ${bigqueryCode?.fileName || 'bigquery_migration.sql'}`}
 └── README.md
 \`\`\`
 
@@ -180,12 +154,12 @@ Last updated: ${new Date().toISOString()}
 `;
   };
 
-  const availableCodes = Object.values(generatedCodes).filter(Boolean);
+  const availableCodes = generatedCodes.bigquery ? [generatedCodes.bigquery] : [];
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden">
-        <DialogHeader>
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle className="flex items-center gap-2">
             <Download className="h-5 w-5 text-primary" />
             Export Generated Code
@@ -195,13 +169,13 @@ Last updated: ${new Date().toISOString()}
           </DialogDescription>
         </DialogHeader>
 
-        <Tabs defaultValue="download" className="h-[calc(90vh-120px)]">
-          <TabsList className="grid w-full grid-cols-2">
+        <Tabs defaultValue="download" className="flex-1 flex flex-col min-h-0" onValueChange={setActiveTab}>
+          <TabsList className="grid w-full grid-cols-2 flex-shrink-0">
             <TabsTrigger value="download">Download Files</TabsTrigger>
             <TabsTrigger value="github">GitHub Integration</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="download" className="h-full overflow-auto space-y-6">
+          <TabsContent value="download" className="flex-1 overflow-auto space-y-6 py-4">
             {/* Generated Files Overview */}
             <Card>
               <CardHeader>
@@ -211,24 +185,27 @@ Last updated: ${new Date().toISOString()}
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
-                {Object.entries(generatedCodes).map(([platform, code]) => (
-                  <div key={platform} className="flex items-center justify-between p-3 border rounded-lg">
-                    <div className="flex items-center gap-3">
-                      <FileText className="h-4 w-4 text-muted-foreground" />
-                      <div>
-                        <div className="font-medium">{code?.fileName || `${platform}.sql`}</div>
-                        <div className="text-sm text-muted-foreground">
-                          {platform.toUpperCase()} • {Math.round((code?.size || 0) / 1024)}KB
+                {(() => {
+                  const bigqueryCode = generatedCodes.bigquery;
+                  return (
+                    <div className="flex items-center justify-between p-3 border rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <FileText className="h-4 w-4 text-muted-foreground" />
+                        <div>
+                          <div className="font-medium">{bigqueryCode?.fileName || 'bigquery_migration.sql'}</div>
+                          <div className="text-sm text-muted-foreground">
+                            BIGQUERY • {Math.round((bigqueryCode?.size || 0) / 1024)}KB
+                          </div>
                         </div>
                       </div>
+                      {bigqueryCode ? (
+                        <CheckCircle className="h-4 w-4 text-green-600" />
+                      ) : (
+                        <div className="text-xs text-muted-foreground">Not generated</div>
+                      )}
                     </div>
-                    {code ? (
-                      <CheckCircle className="h-4 w-4 text-green-600" />
-                    ) : (
-                      <div className="text-xs text-muted-foreground">Not generated</div>
-                    )}
-                  </div>
-                ))}
+                  );
+                })()}
               </CardContent>
             </Card>
 
@@ -285,18 +262,9 @@ Last updated: ${new Date().toISOString()}
               </CardContent>
             </Card>
 
-            <div className="flex justify-end">
-              <Button
-                onClick={handleDownloadFiles}
-                disabled={availableCodes.length === 0 || isExporting}
-                className="min-w-[140px]"
-              >
-                {isExporting ? 'Preparing...' : `Download ${availableCodes.length} Files`}
-              </Button>
-            </div>
           </TabsContent>
 
-          <TabsContent value="github" className="h-full overflow-auto space-y-6">
+          <TabsContent value="github" className="flex-1 overflow-auto space-y-6 py-4">
             {/* GitHub Repository Settings */}
             <Card>
               <CardHeader>
@@ -365,20 +333,20 @@ Last updated: ${new Date().toISOString()}
                 <div className="font-mono text-sm space-y-1 text-muted-foreground">
                   <div>📁 {githubSettings.repositoryName}/</div>
                   <div>├── 📄 README.md</div>
-                  {Object.entries(generatedCodes).map(([platform, code]) => 
-                    code && (
-                      <div key={platform}>
-                        ├── 📁 {platform}/
-                        <div>│   └── 📄 {code.fileName}</div>
+                  {(() => {
+                    const bigqueryCode = generatedCodes.bigquery;
+                    return bigqueryCode && (
+                      <div>
+                        ├── 📁 bigquery/
+                        <div>│   └── 📄 {bigqueryCode.fileName}</div>
                       </div>
-                    )
-                  )}
+                    );
+                  })()}
                   {githubSettings.includeWorkflows && (
                     <>
                       <div>├── 📁 .github/</div>
                       <div>│   └── 📁 workflows/</div>
-                      <div>│       ├── 📄 deploy-bigquery.yml</div>
-                      <div>│       └── 📄 deploy-databricks.yml</div>
+                      <div>│       └── 📄 deploy-bigquery.yml</div>
                     </>
                   )}
                   <div>└── 📄 .gitignore</div>
@@ -386,27 +354,39 @@ Last updated: ${new Date().toISOString()}
               </CardContent>
             </Card>
 
-            <div className="flex justify-end">
-              <Button
-                onClick={handleCreateGithubRepo}
-                disabled={!githubSettings.repositoryName || isExporting}
-                className="min-w-[160px]"
-              >
-                {isExporting ? 'Creating Repository...' : 'Create GitHub Repository'}
-              </Button>
-            </div>
           </TabsContent>
         </Tabs>
 
-        <Separator />
-        
-        <div className="flex justify-between">
-          <div className="text-sm text-muted-foreground">
-            {availableCodes.length} of {Object.keys(generatedCodes).length} platforms ready
+        <div className="flex-shrink-0 pt-4">
+          <Separator className="mb-4" />
+          
+          <div className="flex justify-between items-center">
+            <div className="text-sm text-muted-foreground">
+              {availableCodes.length} of 1 platform ready
+            </div>
+            <div className="flex gap-3">
+              {activeTab === 'download' ? (
+                <Button
+                  onClick={handleDownloadFiles}
+                  disabled={availableCodes.length === 0 || isExporting}
+                  className="min-w-[140px]"
+                >
+                  {isExporting ? 'Preparing...' : `Download ${availableCodes.length} File`}
+                </Button>
+              ) : (
+                <Button
+                  onClick={handleCreateGithubRepo}
+                  disabled={!githubSettings.repositoryName || isExporting}
+                  className="min-w-[160px]"
+                >
+                  {isExporting ? 'Creating Repository...' : 'Create GitHub Repository'}
+                </Button>
+              )}
+              <Button variant="outline" onClick={() => onOpenChange(false)}>
+                Close
+              </Button>
+            </div>
           </div>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Close
-          </Button>
         </div>
       </DialogContent>
     </Dialog>
