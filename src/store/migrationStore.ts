@@ -56,6 +56,7 @@ interface MigrationState {
   clearFiles: () => void;
   setUploadProgress: (progress: number) => void;
   canProceedToNextPhase: () => boolean;
+  resetProjectState: () => void;
   
   // User profile actions
   setUserProfile: (profile: UserProfile) => void;
@@ -964,6 +965,64 @@ export const useMigrationStore = create<MigrationState>()(
             authenticated: false
           }
         });
+      },
+
+      // Reset project state - clears all project-related data for new project creation
+      resetProjectState: () => {
+        set((state) => ({
+          // Clear file upload state
+          sourceFiles: [],
+          targetFiles: [],
+          uploadProgress: 0,
+          
+          // Reset discovery state
+          discoveryState: {
+            isProcessing: false,
+            progress: 0,
+            currentStep: '',
+            lineageGraph: null,
+            error: null,
+            completedAt: null,
+          },
+          
+          // Reset mapping state
+          mappingState: {
+            isProcessing: false,
+            progress: 0,
+            currentStep: '',
+            selectedSourceTable: null,
+            selectedTargetTable: null,
+            currentTableMapping: null,
+            allMappings: [],
+            suggestions: [],
+            error: null,
+            completedAt: null,
+            selectedTableFilter: null,
+            selectedTableFilterType: null,
+            selectedSourceColumns: [],
+            selectedTargetColumns: [],
+          },
+          
+          // Reset code generation state
+          codeGenerationState: {
+            isProcessing: false,
+            progress: 0,
+            currentStep: '',
+            selectedPlatform: 'bigquery',
+            generatedCodes: {
+              bigquery: null,
+              databricks: null,
+              'python-beam': null,
+              dbt: null,
+            },
+            optimizations: [],
+            previewMode: 'code',
+            error: null,
+            completedAt: null,
+            originalCodeForComparison: '',
+            optimizedCodeForComparison: '',
+          },
+        }));
       },
     }),
     {

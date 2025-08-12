@@ -29,6 +29,7 @@ export default function SchemaUpload() {
     removeFile,
     canProceedToNextPhase,
     setCurrentPhase,
+    resetProjectState,
   } = useMigrationStore();
 
   const [sourceDialect, setSourceDialect] = useState<SchemaDialect>(
