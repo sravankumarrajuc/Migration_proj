@@ -13,6 +13,7 @@ import { MappingCanvas } from '@/components/mapping/MappingCanvas';
 import { AISuggestionsPanel } from '@/components/mapping/AISuggestionsPanel';
 import { MappingReview } from '@/components/mapping/MappingReview';
 import { mockTableMappings } from '@/data/mockMappingData';
+import { capPercentage } from '@/data/mockProjects';
 import { Loader2, ArrowRight, CheckCircle, AlertCircle, Sparkles } from 'lucide-react';
 
 export function Mapping() {
@@ -134,7 +135,7 @@ export function Mapping() {
 
   // Calculate overall progress based on all mappings in the store
   const overallProgress = mappingState.allMappings.length > 0
-    ? mappingState.allMappings.reduce((sum, m) => sum + m.completionPercentage, 0) / mappingState.allMappings.length
+    ? capPercentage(mappingState.allMappings.reduce((sum, m) => sum + capPercentage(m.completionPercentage), 0) / mappingState.allMappings.length)
     : 0;
 
   if (!currentProject || !discoveryState.lineageGraph) {

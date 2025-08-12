@@ -14,6 +14,7 @@ import { useMigrationStore } from '@/store/migrationStore';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Project, ProjectTemplate, SchemaDialect } from '@/types/migration';
 import { useToast } from '@/hooks/use-toast';
+import { formatDateOnly } from '@/utils/dateFormatter';
 
 export default function Projects() {
   const navigate = useNavigate();
@@ -330,7 +331,7 @@ export default function Projects() {
                 </div>
                 
                 <div className="flex items-center justify-between text-xs text-muted-foreground">
-                  <span>Created {new Date(project.createdAt).toLocaleDateString()}</span>
+                  <span>Created {formatDateOnly(project.createdAt)}</span>
                   <span>Phase: {project.progress.currentPhase}</span>
                 </div>
               </div>

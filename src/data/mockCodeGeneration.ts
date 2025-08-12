@@ -1,9 +1,10 @@
 import { CodePlatform, GeneratedCode, CodeOptimization } from '@/types/migration';
+import { formatDateOnly } from '@/utils/dateFormatter';
 
 // BigQuery SQL Template
 const bigQuerySQL = `-- Condensed BigQuery SQL using Denormalized Schema
 -- Steps collapsed for a cleaner, production‐style pipeline
--- Generated: ${new Date().toISOString()}
+-- Generated: ${formatDateOnly(new Date())}
 
 --------------------------------------------------------------------------------
 -- 1. BaseFlatten: unpack all nested arrays in one go
@@ -190,7 +191,7 @@ LIMIT 100;
 const databricksSQL = `-- Generated Databricks SQL for Data Migration
 -- Source: PostgreSQL customers, orders tables  
 -- Target: Delta Lake dim_customer, fact_order tables
--- Generated: ${new Date().toISOString()}
+-- Generated: ${formatDateOnly(new Date())}
 
 -- Customer Dimension Migration
 CREATE OR REPLACE TABLE main.warehouse.dim_customer
@@ -276,7 +277,7 @@ const pythonBeamCode = `"""
 Generated Apache Beam Pipeline for Data Migration
 Source: PostgreSQL customers, orders tables
 Target: BigQuery dim_customer, fact_order tables
-Generated: ${new Date().toISOString()}
+Generated: ${formatDateOnly(new Date())}
 """
 
 import apache_beam as beam
@@ -423,7 +424,7 @@ if __name__ == '__main__':
 const dbtCode = `-- Generated dbt models for Data Migration
 -- Source: PostgreSQL customers, orders tables
 -- Target: BigQuery dim_customer, fact_order tables
--- Generated: ${new Date().toISOString()}
+-- Generated: ${formatDateOnly(new Date())}
 
 -- models/staging/stg_customers.sql
 {{
@@ -550,6 +551,7 @@ const optimizedBigQuerySQL = `--------------------------------------------------
 -- Optimized BigQuery SQL for Target Reports
 -- Best practices applied: pushdown filters, avoid rescans, column pruning,
 -- QUALIFY usage, precompute reusable fields, explicit projections.
+-- Generated: ${formatDateOnly(new Date())}
 --------------------------------------------------------------------------------
 
 WITH BaseFlatten AS (

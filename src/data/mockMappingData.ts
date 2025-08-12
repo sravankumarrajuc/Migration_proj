@@ -1,4 +1,5 @@
 import { FieldMapping, MappingRule, TableMapping, TransformationType } from '@/types/migration';
+import { capPercentage } from './mockProjects';
 
 const now = new Date().toISOString();
 
@@ -154,7 +155,7 @@ export const mockTableMappings: TableMapping[] = [
     sourceTableId: 'src-db2-customers',
     targetTableId: 'tgt-bq-customers',
     fieldMappings: customerMappings,
-    completionPercentage: 100,
+    completionPercentage: capPercentage(100),
     requiredFieldsCovered: 17,
     totalRequiredFields: 17,
   },
@@ -162,7 +163,7 @@ export const mockTableMappings: TableMapping[] = [
     sourceTableId: 'src-db2-claims',
     targetTableId: 'tgt-bq-claims',
     fieldMappings: claimsMappings,
-    completionPercentage: 100,
+    completionPercentage: capPercentage(100),
     requiredFieldsCovered: 18,
     totalRequiredFields: 18,
   },
@@ -170,7 +171,7 @@ export const mockTableMappings: TableMapping[] = [
     sourceTableId: 'src-db2-policies',
     targetTableId: 'tgt-bq-policies',
     fieldMappings: policiesMappings,
-    completionPercentage: 100,
+    completionPercentage: capPercentage(100),
     requiredFieldsCovered: 11,
     totalRequiredFields: 11,
   },
@@ -178,7 +179,7 @@ export const mockTableMappings: TableMapping[] = [
     sourceTableId: 'src-db2-agents',
     targetTableId: 'tgt-bq-agents',
     fieldMappings: agentsMappings,
-    completionPercentage: 100,
+    completionPercentage: capPercentage(100),
     requiredFieldsCovered: 10,
     totalRequiredFields: 10,
   },
@@ -186,7 +187,7 @@ export const mockTableMappings: TableMapping[] = [
     sourceTableId: 'src-db2-risk-ratings',
     targetTableId: 'tgt-bq-risk-ratings',
     fieldMappings: riskRatingsMappings,
-    completionPercentage: 100,
+    completionPercentage: capPercentage(100),
     requiredFieldsCovered: 7,
     totalRequiredFields: 7,
   },

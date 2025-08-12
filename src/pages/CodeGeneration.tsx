@@ -17,6 +17,7 @@ import { mockGeneratedCodes, mockCodeGenSteps, mockCodeOptimizations } from '@/d
 import { CodePlatform, Project, SchemaFile } from '@/types/migration';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import { getCompletedProjects } from '@/data/mockProjects';
+import { formatDateOnly } from '@/utils/dateFormatter';
 
 export function CodeGeneration() {
   const { projectId } = useParams();
@@ -382,7 +383,7 @@ export function CodeGeneration() {
                                 </div>
                                 <div className="flex justify-between text-sm">
                                   <span className="text-muted-foreground">Generated:</span>
-                                  <span>{new Date(currentCode.lastGenerated).toLocaleDateString()}</span>
+                                  <span>{formatDateOnly(currentCode.lastGenerated)}</span>
                                 </div>
                               </>
                             ) : (

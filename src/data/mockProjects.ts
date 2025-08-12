@@ -153,7 +153,14 @@ export const getStatusColor = (status: Project['status']) => {
   }
 };
 
+// Helper function to cap percentage values at 100%
+export const capPercentage = (value: number): number => {
+  return Math.min(Math.max(value, 0), 100);
+};
+
 export const getPhaseProgress = (completedPhases: string[]) => {
   const totalPhases = 4; // upload, discovery, mapping, validation
-  return (completedPhases.length / totalPhases) * 100;
+  const progress = (completedPhases.length / totalPhases) * 100;
+  // Ensure progress never exceeds 100%
+  return capPercentage(progress);
 };
