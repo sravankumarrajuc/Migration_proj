@@ -8,6 +8,8 @@ export interface Project {
   createdAt: string;
   updatedAt: string;
   progress: ProjectProgress;
+  sourceFiles?: SchemaFile[];
+  targetFiles?: SchemaFile[];
 }
 
 export interface ProjectProgress {

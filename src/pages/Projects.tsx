@@ -98,6 +98,8 @@ export default function Projects() {
         mappingsComplete: false,
         validationComplete: false,
       },
+      sourceFiles: [],
+      targetFiles: [],
     };
 
     // Add project to projects list and persist it

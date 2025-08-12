@@ -50,6 +50,8 @@ const baseMockProjects: Project[] = [
       mappingsComplete: false,
       validationComplete: false,
     },
+    sourceFiles: [],
+    targetFiles: [],
   },
   {
     id: 'proj-2',
@@ -67,6 +69,8 @@ const baseMockProjects: Project[] = [
       mappingsComplete: true,
       validationComplete: true,
     },
+    sourceFiles: [],
+    targetFiles: [],
   },
   {
     id: 'proj-3',
@@ -84,6 +88,8 @@ const baseMockProjects: Project[] = [
       mappingsComplete: false,
       validationComplete: false,
     },
+    sourceFiles: [],
+    targetFiles: [],
   },
 ];
 

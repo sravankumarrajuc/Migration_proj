@@ -200,6 +200,9 @@ export const useMigrationStore = create<MigrationState>()(
         set((state) => ({
           currentProject: project,
           currentPhase: project ? project.progress.currentPhase : 'upload', // Default to 'upload' if project is null
+          // Load project-specific files when switching projects
+          sourceFiles: project?.sourceFiles || [],
+          targetFiles: project?.targetFiles || [],
         }));
       },
 
@@ -255,34 +258,125 @@ export const useMigrationStore = create<MigrationState>()(
       },
 
       addSourceFile: (file) => {
-        set((state) => ({
-          sourceFiles: [...state.sourceFiles, file],
-        }));
+        set((state) => {
+          const updatedSourceFiles = [...state.sourceFiles, file];
+          const updatedProject = state.currentProject ? {
+            ...state.currentProject,
+            sourceFiles: updatedSourceFiles,
+            updatedAt: new Date().toISOString(),
+          } : null;
+
+          // Persist updated project to localStorage
+          if (updatedProject && typeof window !== 'undefined') {
+            const existingProjects = JSON.parse(localStorage.getItem('completed-projects') || '[]');
+            const updatedProjects = existingProjects.map((p: any) =>
+              p.id === updatedProject.id ? updatedProject : p
+            );
+            if (!updatedProjects.some((p: any) => p.id === updatedProject.id)) {
+              updatedProjects.push(updatedProject);
+            }
+            localStorage.setItem('completed-projects', JSON.stringify(updatedProjects));
+          }
+
+          return {
+            sourceFiles: updatedSourceFiles,
+            currentProject: updatedProject,
+          };
+        });
       },
 
       addTargetFile: (file) => {
-        set((state) => ({
-          targetFiles: [...state.targetFiles, file],
-        }));
+        set((state) => {
+          const updatedTargetFiles = [...state.targetFiles, file];
+          const updatedProject = state.currentProject ? {
+            ...state.currentProject,
+            targetFiles: updatedTargetFiles,
+            updatedAt: new Date().toISOString(),
+          } : null;
+
+          // Persist updated project to localStorage
+          if (updatedProject && typeof window !== 'undefined') {
+            const existingProjects = JSON.parse(localStorage.getItem('completed-projects') || '[]');
+            const updatedProjects = existingProjects.map((p: any) =>
+              p.id === updatedProject.id ? updatedProject : p
+            );
+            if (!updatedProjects.some((p: any) => p.id === updatedProject.id)) {
+              updatedProjects.push(updatedProject);
+            }
+            localStorage.setItem('completed-projects', JSON.stringify(updatedProjects));
+          }
+
+          return {
+            targetFiles: updatedTargetFiles,
+            currentProject: updatedProject,
+          };
+        });
       },
 
       updateFileStatus: (fileId, status, preview) => {
-        set((state) => ({
-          sourceFiles: state.sourceFiles.map((file) =>
+        set((state) => {
+          const updatedSourceFiles = state.sourceFiles.map((file) =>
             file.id === fileId ? { ...file, status, preview } : file
-          ),
-          targetFiles: state.targetFiles.map((file) =>
+          );
+          const updatedTargetFiles = state.targetFiles.map((file) =>
             file.id === fileId ? { ...file, status, preview } : file
-          ),
-        }));
+          );
+          
+          const updatedProject = state.currentProject ? {
+            ...state.currentProject,
+            sourceFiles: updatedSourceFiles,
+            targetFiles: updatedTargetFiles,
+            updatedAt: new Date().toISOString(),
+          } : null;
+
+          // Persist updated project to localStorage
+          if (updatedProject && typeof window !== 'undefined') {
+            const existingProjects = JSON.parse(localStorage.getItem('completed-projects') || '[]');
+            const updatedProjects = existingProjects.map((p: any) =>
+              p.id === updatedProject.id ? updatedProject : p
+            );
+            localStorage.setItem('completed-projects', JSON.stringify(updatedProjects));
+          }
+
+          return {
+            sourceFiles: updatedSourceFiles,
+            targetFiles: updatedTargetFiles,
+            currentProject: updatedProject,
+          };
+        });
       },
 
       removeFile: (fileId, type) => {
-        set((state) => ({
-          [type === 'source' ? 'sourceFiles' : 'targetFiles']: state[
-            type === 'source' ? 'sourceFiles' : 'targetFiles'
-          ].filter((file) => file.id !== fileId),
-        }));
+        set((state) => {
+          const updatedSourceFiles = type === 'source' 
+            ? state.sourceFiles.filter((file) => file.id !== fileId)
+            : state.sourceFiles;
+          const updatedTargetFiles = type === 'target'
+            ? state.targetFiles.filter((file) => file.id !== fileId)
+            : state.targetFiles;
+
+          const updatedProject = state.currentProject ? {
+            ...state.currentProject,
+            sourceFiles: updatedSourceFiles,
+            targetFiles: updatedTargetFiles,
+            updatedAt: new Date().toISOString(),
+          } : null;
+
+          // Persist updated project to localStorage
+          if (updatedProject && typeof window !== 'undefined') {
+            const existingProjects = JSON.parse(localStorage.getItem('completed-projects') || '[]');
+            const updatedProjects = existingProjects.map((p: any) =>
+              p.id === updatedProject.id ? updatedProject : p
+            );
+            localStorage.setItem('completed-projects', JSON.stringify(updatedProjects));
+          }
+
+          return {
+            sourceFiles: updatedSourceFiles,
+            targetFiles: updatedTargetFiles,
+            currentProject: updatedProject,
+          };
+        });
       },
 
       clearFiles: () => {
