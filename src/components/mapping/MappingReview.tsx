@@ -9,6 +9,7 @@ import { Separator } from '@/components/ui/separator';
 import { CheckCircle, AlertTriangle, Clock, Download, FileText } from 'lucide-react';
 import { getTransformationIcon, getConfidenceBadgeColor } from '@/data/mockMappingData';
 import { mockTableMappings } from '@/data/mockMappingData';
+import { capPercentage } from '@/data/mockProjects';
 
 export function MappingReview() {
   const { mappingState, discoveryState } = useMigrationStore();
@@ -18,7 +19,7 @@ export function MappingReview() {
   const approvedMappings = allMappings.reduce((sum, tm) => 
     sum + tm.fieldMappings.filter(fm => fm.status === 'approved').length, 0
   );
-  const overallProgress = totalMappings > 0 ? (approvedMappings / totalMappings) * 100 : 0;
+  const overallProgress = totalMappings > 0 ? capPercentage((approvedMappings / totalMappings) * 100) : 0;
 
   const getSourceColumn = (sourceTableId: string, sourceColumnId: string) => {
     if (!discoveryState.lineageGraph) return null;
@@ -135,10 +136,10 @@ export function MappingReview() {
                       <div className="flex items-center gap-4 text-sm text-muted-foreground">
                         <span>{tableMapping.fieldMappings.length} field mappings</span>
                         <span>{tableMapping.requiredFieldsCovered}/{tableMapping.totalRequiredFields} required fields</span>
-                        <Badge variant="outline">{Math.round(tableMapping.completionPercentage)}% complete</Badge>
+                        <Badge variant="outline">{Math.round(capPercentage(tableMapping.completionPercentage))}% complete</Badge>
                       </div>
                     </div>
-                    <Progress value={tableMapping.completionPercentage} className="w-32 h-2" />
+                    <Progress value={capPercentage(tableMapping.completionPercentage)} className="w-32 h-2" />
                   </div>
 
                   <Table>

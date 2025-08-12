@@ -6,6 +6,7 @@ import { Separator } from '@/components/ui/separator';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Download, FileText, Mail, Share, Eye } from 'lucide-react';
+import { formatDateOnly } from '@/utils/dateFormatter';
 
 interface ValidationStats {
   filesCompared: number;
@@ -204,7 +205,7 @@ export function ReportGenerator({ projectName, validationStats }: ReportGenerato
             </div>
             <div className="flex justify-between text-sm">
               <span>Generated On:</span>
-              <span className="font-medium">{new Date().toLocaleDateString()}</span>
+              <span className="font-medium">{formatDateOnly(new Date())}</span>
             </div>
             <div className="flex justify-between text-sm">
               <span>Report Sections:</span>
