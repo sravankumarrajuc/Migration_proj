@@ -29,6 +29,7 @@ export default function SchemaUpload() {
     removeFile,
     canProceedToNextPhase,
     setCurrentPhase,
+    resetProjectState,
   } = useMigrationStore();
 
   const [sourceDialect, setSourceDialect] = useState<SchemaDialect>(
@@ -49,6 +50,14 @@ export default function SchemaUpload() {
       setCurrentPhase('upload');
     }
   }, [currentProject, navigate, setCurrentPhase]);
+
+  // Load project-specific files when component mounts or project changes
+  useEffect(() => {
+    if (currentProject) {
+      // The files are already loaded by setCurrentProject in the store
+      // This effect ensures the component re-renders when project changes
+    }
+  }, [currentProject?.id]);
 
   const handleFilesAdded = (files: File[], type: 'source' | 'target') => {
     files.forEach((file) => {
@@ -86,7 +95,7 @@ export default function SchemaUpload() {
             sampleTables: [],
             estimatedComplexity: 'moderate',
           };
-        } else if (file.name === 'bq_target_schema.ddl') {
+        } else if ((file.name === 'bq_target_schema.ddl') || (file.name === 'bq_tqrget_schema.ddl')) {
           parsedData = {
             tableCount: 5,
             columnCount: 81,

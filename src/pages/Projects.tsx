@@ -20,7 +20,7 @@ export default function Projects() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const location = useLocation();
-  const { currentProject, setCurrentProject, setCurrentPhase } = useMigrationStore();
+  const { currentProject, setCurrentProject, setCurrentPhase, resetProjectState } = useMigrationStore();
   const [projects, setProjects] = useState<Project[]>([]);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [newProject, setNewProject] = useState({
@@ -79,6 +79,9 @@ export default function Projects() {
       return;
     }
 
+    // Reset all project-related state before creating new project
+    resetProjectState();
+
     const project: Project = {
       id: `proj-${Date.now()}`,
       name: newProject.name,
@@ -95,6 +98,8 @@ export default function Projects() {
         mappingsComplete: false,
         validationComplete: false,
       },
+      sourceFiles: [],
+      targetFiles: [],
     };
 
     // Add project to projects list and persist it
