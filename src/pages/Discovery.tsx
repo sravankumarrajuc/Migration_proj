@@ -14,7 +14,7 @@ import { SourceToSourceLineageGraph } from '@/components/discovery/SourceToSourc
 import { mockLineageGraph, discoverySteps } from '@/data/mockLineageData';
 import { ArrowRight, Database, GitBranch, BarChart3, CheckCircle } from 'lucide-react';
 import { toast } from 'sonner';
-import { formatDateTime } from '@/utils/dateFormatter';
+import { formatDateOnly } from '@/utils/dateFormatter';
 
 export default function Discovery() {
   const { projectId } = useParams();
@@ -237,7 +237,7 @@ export default function Discovery() {
                   <div className="flex items-center justify-between text-sm">
                     <span>Completed At</span>
                     <span className="text-muted-foreground">
-                      {formatDateTime(discoveryState.completedAt)}
+                      {formatDateOnly(discoveryState.completedAt)}
                     </span>
                   </div>
                 </div>
